@@ -1,6 +1,6 @@
 import { OAuth2Client, TokenPayload } from 'google-auth-library';
 import { Request, Response, NextFunction } from 'express';
-import { query } from '../db.js';
+import { query } from '../db';
 
 const clientId = process.env.GOOGLE_CLIENT_ID || '';
 const allowedDomain = process.env.ALLOWED_DOMAIN || 'insbitacola.cat';

@@ -1,8 +1,8 @@
 import { Router, Request, Response } from 'express';
-import { requireAuth, requireRole } from '../middleware/auth.js';
-import { query, withTransaction } from '../db.js';
-import { createSheetsClient } from '../sheets/client.js';
-import { SheetsRepo } from '../sheets/repo.js';
+import { requireAuth, requireRole } from '../middleware/auth';
+import { query, withTransaction } from '../db';
+import { createSheetsClient } from '../sheets/client';
+import { SheetsRepo } from '../sheets/repo';
 import { z } from 'zod';
 
 const router = Router();

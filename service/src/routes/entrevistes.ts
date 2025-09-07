@@ -1,8 +1,8 @@
 import { Router, Request, Response } from 'express';
-import { requireAuth, requireRole } from '../middleware/auth.js';
-import { getAnyActual } from '../db.js';
-import { createSheetsClient } from '../sheets/client.js';
-import { SheetsRepo } from '../sheets/repo.js';
+import { requireAuth, requireRole } from '../middleware/auth';
+import { getAnyActual } from '../db';
+import { createSheetsClient } from '../sheets/client';
+import { SheetsRepo } from '../sheets/repo';
 import { z } from 'zod';
 import { ulid } from 'ulid';
 

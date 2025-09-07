@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { createApp } from './app.js';
+import { createApp } from './app';
 
 const app = createApp();
 const port = process.env.PORT ? Number(process.env.PORT) : 8080;

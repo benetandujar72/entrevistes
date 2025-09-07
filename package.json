@@ -1,0 +1,14 @@
+{
+  "name": "entrevistes-monorepo",
+  "private": true,
+  "workspaces": [
+    "service"
+  ],
+  "scripts": {
+    "build": "npm --prefix service run build"
+  },
+  "dependencies": {
+    "@vercel/node": "^3.2.13",
+    "serverless-http": "^3.2.0"
+  }
+}
