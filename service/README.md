@@ -40,3 +40,8 @@ Autenticación: enviar Google ID Token en `Authorization: Bearer <token>` o cabe
 Acceso a Sheets: usar cuenta de servicio; comparte el Spreadsheet con el `client_email` de la cuenta de servicio.
 
 Modo desarrollo: puedes poner `DISABLE_AUTH=1` para saltar auth localmente.
+
+## Despliegue (Cloud Run)
+- Requisitos: habilitar Cloud Build y Cloud Run; crear SA con permisos de Cloud Run Admin y Artifact Registry Writer.
+- Configura en GitHub Secrets: `GCP_PROJECT_ID`, `GCP_REGION`, `GCP_WORKLOAD_IDENTITY_PROVIDER`, `GCP_DEPLOY_SA`, `ALLOWED_DOMAIN`, `GOOGLE_CLIENT_ID`, `SHEETS_SPREADSHEET_ID`, `GOOGLE_SERVICE_ACCOUNT_JSON`, `ANY_ACTUAL`.
+- Al hacer push a `main`, el workflow `.github/workflows/deploy.yml` construye y despliega.

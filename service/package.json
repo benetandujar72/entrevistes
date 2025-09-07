@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "build": "tsc -p .",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "smoke": "node -e \"fetch(process.env.BASE_URL+'/health').then(r=>r.json()).then(x=>{console.log(x); if(!x||x.status!=='ok') process.exit(1);}).catch(()=>process.exit(1))\""
   },
   "dependencies": {
     "dotenv": "^16.4.5",

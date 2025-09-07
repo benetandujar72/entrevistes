@@ -5,7 +5,9 @@ info:
   description: API mínima para alumnes, entrevistes, cursos, import/export.
 servers:
   - url: https://gei.adeptify.es/api
-    description: Producción
+    description: Producción (on-prem)
+  - url: https://REEMPLAZA-CON-TU-URL-CLoudRun.run.app
+    description: Cloud Run
 paths:
   /alumnes:
     get:

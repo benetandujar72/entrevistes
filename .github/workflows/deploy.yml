@@ -1,0 +1,48 @@
+name: Deploy to Cloud Run
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+      REGION: ${{ secrets.GCP_REGION }}
+      SERVICE_NAME: entrevistes-service
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up gcloud auth
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_DEPLOY_SA }}
+
+      - name: Configure gcloud
+        run: |
+          gcloud config set project $PROJECT_ID
+          gcloud config set run/region $REGION
+
+      - name: Build image
+        run: |
+          gcloud builds submit service --tag gcr.io/$PROJECT_ID/entrevistes-service:$(git rev-parse --short HEAD)
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy $SERVICE_NAME \
+            --image gcr.io/$PROJECT_ID/entrevistes-service:$(git rev-parse --short HEAD) \
+            --platform managed \
+            --allow-unauthenticated \
+            --port 8080 \
+            --set-env-vars "ALLOWED_DOMAIN=${{ secrets.ALLOWED_DOMAIN }}" \
+            --set-env-vars "GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}" \
+            --set-env-vars "SHEETS_SPREADSHEET_ID=${{ secrets.SHEETS_SPREADSHEET_ID }}" \
+            --set-env-vars "GOOGLE_SERVICE_ACCOUNT_JSON=${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}" \
+            --set-env-vars "ANY_ACTUAL=${{ secrets.ANY_ACTUAL }}" \
+            --set-env-vars "DISABLE_AUTH=${{ secrets.DISABLE_AUTH || '0' }}"
