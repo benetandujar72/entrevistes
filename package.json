@@ -1,14 +1,23 @@
 {
-  "name": "entrevistes-monorepo",
+  "name": "entrevistes-vercel",
   "private": true,
-  "workspaces": [
-    "service"
-  ],
   "scripts": {
-    "build": "npm --prefix service run build"
+    "build": "tsc --project tsconfig.json"
   },
   "dependencies": {
     "@vercel/node": "^3.2.13",
-    "serverless-http": "^3.2.0"
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "google-auth-library": "^9.14.1",
+    "googleapis": "^144.0.0",
+    "pg": "^8.11.5",
+    "serverless-http": "^3.2.0",
+    "ulid": "^2.3.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.14.10",
+    "typescript": "^5.5.4"
   }
 }

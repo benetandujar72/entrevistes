@@ -1,15 +1,13 @@
 {
   "functions": {
-    "api/index.ts": {
-      "runtime": "@vercel/node@3",
-      "includeFiles": [
-        "service/src/**",
-        "service/package.json",
-        "service/tsconfig.json"
-      ]
-    },
     "api/[...all].ts": {
       "runtime": "@vercel/node@3"
     }
-  }
+  },
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api"
+    }
+  ]
 }

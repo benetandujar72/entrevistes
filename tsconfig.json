@@ -2,7 +2,8 @@
   "extends": "./service/tsconfig.json",
   "compilerOptions": {
     "rootDir": ".",
-    "outDir": "dist-root"
+    "outDir": ".vercel/output",
+    "resolveJsonModule": true
   },
   "include": ["api/**/*.ts", "service/src/**/*.ts"]
 }
