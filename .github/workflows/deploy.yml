@@ -17,12 +17,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up gcloud auth
-        id: auth
-        uses: google-github-actions/auth@v2
+      - name: Set up gcloud SDK
+        uses: google-github-actions/setup-gcloud@v2
         with:
-          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ secrets.GCP_DEPLOY_SA }}
+          project_id: ${{ env.PROJECT_ID }}
+          service_account_key: ${{ secrets.GCP_SA_KEY }}
+          export_default_credentials: true
 
       - name: Configure gcloud
         run: |
