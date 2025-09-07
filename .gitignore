@@ -1,0 +1,16 @@
+# dependencies
+node_modules/
+
+# env/secrets
+.env
+*.env
+service/.env
+*.local
+client_secret_*.json
+
+# build outputs
+service/dist/
+
+# OS
+.DS_Store
+Thumbs.db
