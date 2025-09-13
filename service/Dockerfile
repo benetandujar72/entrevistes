@@ -18,5 +18,6 @@ ENV NODE_ENV=production
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
+COPY package.json ./
 EXPOSE 8080
 CMD ["node","dist/index.js"]
