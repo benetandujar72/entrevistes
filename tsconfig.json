@@ -1,9 +1,0 @@
-{
-  "extends": "./service/tsconfig.json",
-  "compilerOptions": {
-    "rootDir": ".",
-    "outDir": ".vercel/output",
-    "resolveJsonModule": true
-  },
-  "include": ["api/**/*.ts", "service/src/**/*.ts"]
-}

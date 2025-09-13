@@ -17,7 +17,6 @@ FROM node:20-alpine AS runner
 ENV NODE_ENV=production
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
-COPY package.json ./package.json
-COPY dist ./dist
+COPY --from=builder /app/dist ./dist
 EXPOSE 8080
 CMD ["node","dist/index.js"]

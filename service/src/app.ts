@@ -1,7 +1,7 @@
 import express from 'express';
-import alumnes from './routes/alumnes';
-import entrevistes from './routes/entrevistes';
-import cursos from './routes/cursos';
+import alumnes from './routes/alumnes.js';
+import entrevistes from './routes/entrevistes.js';
+import cursos from './routes/cursos.js';
 
 export function createApp() {
   const app = express();

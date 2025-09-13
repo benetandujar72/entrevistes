@@ -45,3 +45,14 @@ Modo desarrollo: puedes poner `DISABLE_AUTH=1` para saltar auth localmente.
 - Requisitos: habilitar Cloud Build y Cloud Run; crear SA con permisos de Cloud Run Admin y Artifact Registry Writer.
 - Configura en GitHub Secrets: `GCP_PROJECT_ID`, `GCP_REGION`, `GCP_WORKLOAD_IDENTITY_PROVIDER`, `GCP_DEPLOY_SA`, `ALLOWED_DOMAIN`, `GOOGLE_CLIENT_ID`, `SHEETS_SPREADSHEET_ID`, `GOOGLE_SERVICE_ACCOUNT_JSON`, `ANY_ACTUAL`.
 - Al hacer push a `main`, el workflow `.github/workflows/deploy.yml` construye y despliega.
+
+## Despliegue (Docker)
+Para construir la imagen de Docker, desde la carpeta `service/`:
+```
+docker build -t entrevistes-service .
+```
+
+Para correr la imagen, pasando las variables de entorno desde un archivo `.env`:
+```
+docker run --rm -p 8080:8080 --env-file ./.env entrevistes-service
+```

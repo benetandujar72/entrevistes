@@ -4,8 +4,4 @@ Dockerfile
 .git
 .env
 *.env
-**/.env
-**/*.env
-**/node_modules
-**/dist
-client_secret_*.json
+dist
