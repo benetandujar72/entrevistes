@@ -1,0 +1,134 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Variables CSS per colors primaris */
+:root {
+  --color-primary-50: #eff6ff;
+  --color-primary-100: #dbeafe;
+  --color-primary-200: #bfdbfe;
+  --color-primary-300: #93c5fd;
+  --color-primary-400: #60a5fa;
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #2563eb;
+  --color-primary-700: #1d4ed8;
+  --color-primary-800: #1e40af;
+  --color-primary-900: #1e3a8a;
+  --color-primary-950: #172554;
+}
+
+/* Mode fosc */
+.dark {
+  --color-primary-50: #172554;
+  --color-primary-100: #1e3a8a;
+  --color-primary-200: #1e40af;
+  --color-primary-300: #1d4ed8;
+  --color-primary-400: #2563eb;
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #60a5fa;
+  --color-primary-700: #93c5fd;
+  --color-primary-800: #bfdbfe;
+  --color-primary-900: #dbeafe;
+  --color-primary-950: #eff6ff;
+}
+
+/* Scrollbar personalitzat */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-100 dark:bg-gray-800;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 dark:bg-gray-600 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-400 dark:bg-gray-500;
+}
+
+/* Focus visible per accessibilitat */
+*:focus-visible {
+  @apply outline-none ring-2 ring-primary-500 ring-offset-2 dark:ring-offset-gray-900;
+}
+
+/* Transicions suaus */
+* {
+  @apply transition-colors duration-200;
+}
+
+/* Efectes de vidre (glassmorphism) */
+.glass {
+  @apply bg-white/10 dark:bg-gray-900/10 backdrop-blur-md border border-white/20 dark:border-gray-700/20;
+}
+
+/* Gradients personalitzats */
+.gradient-primary {
+  background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-700));
+}
+
+.gradient-secondary {
+  background: linear-gradient(135deg, #64748b, #334155);
+}
+
+/* Hover effects */
+.hover-lift {
+  @apply transition-transform duration-200 hover:scale-105;
+}
+
+.hover-glow {
+  @apply transition-shadow duration-200 hover:shadow-lg hover:shadow-primary-500/25;
+}
+
+/* Components personalitzats */
+.btn-primary {
+  @apply bg-primary-600 hover:bg-primary-700 text-white font-medium px-4 py-2 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2;
+}
+
+.btn-secondary {
+  @apply bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 font-medium px-4 py-2 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2;
+}
+
+.input-field {
+  @apply w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
+}
+
+.card {
+  @apply bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6;
+}
+
+.badge {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+}
+
+.badge-primary {
+  @apply bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-200;
+}
+
+.badge-success {
+  @apply bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200;
+}
+
+.badge-warning {
+  @apply bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200;
+}
+
+.badge-error {
+  @apply bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200;
+}
+
+/* PWA styles */
+@media (display-mode: standalone) {
+  body {
+    @apply bg-gray-50 dark:bg-gray-900;
+  }
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}
