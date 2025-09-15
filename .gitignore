@@ -14,3 +14,8 @@ service/dist/
 # OS
 .DS_Store
 Thumbs.db
+
+# extra env ignores
+*.env.*
+service/*.env*
+
