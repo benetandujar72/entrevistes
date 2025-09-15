@@ -102,30 +102,100 @@ export class SheetsRepo {
 
   // Entrevistes_<ANY>
   async listEntrevistes(params: { alumneId?: string; anyCurs?: string }): Promise<any[]> {
-    const cfg = await this.getConfig();
-    const any = params.anyCurs || cfg.anyActual;
-    const sheet = `Entrevistes_${any}`;
-    const resp = await this.sheets.spreadsheets.values.get({ spreadsheetId: this.spreadsheetId, range: `${sheet}!A1:G10000` });
-    const values = resp.data.values || [];
-    const header = values[0] || [];
-    const rows = values.slice(1).map(r => Object.fromEntries(header.map((h, i) => [h, r[i]])));
-    return rows.filter(r => (!params.alumneId || r.alumneId === params.alumneId))
-      .map(r => ({ id: r.id, data: r.data, acords: r.acords, anyCurs: r.anyCurs }));
+    try {
+      const cfg = await this.getConfig();
+      const any = params.anyCurs || cfg.anyActual;
+      const sheet = `Entrevistes_${any}`;
+      const resp = await this.sheets.spreadsheets.values.get({ spreadsheetId: this.spreadsheetId, range: `${sheet}!A1:Z10000` });
+      const values = resp.data.values || [];
+      if (values.length === 0) return [];
+      const header = values[0] || [];
+      const headerLc = header.map(h => (h || '').toString().trim().toLowerCase());
+
+      const idx = (...keys: string[]) => {
+        for (const k of keys) {
+          const i = headerLc.indexOf(k);
+          if (i !== -1) return i;
+        }
+        return -1;
+      };
+
+      const iId = idx('id', 'entrevistaid');
+      const iAlumne = idx('alumneid', 'alumne_id', 'alumne');
+      const iAny = idx('anycurs', 'any', 'curs');
+      const iData = idx('data', 'fecha');
+      const iAcords = idx('acords', 'acuerdos', 'notes');
+      const iAuthor = idx('usuariCreadorId'.toLowerCase(), 'autor', 'creador');
+
+      const out: any[] = [];
+      for (let r = 1; r < values.length; r++) {
+        const row = values[r];
+        const alumneId = iAlumne >= 0 ? row[iAlumne] : undefined;
+        if (params.alumneId && alumneId !== params.alumneId) continue;
+        out.push({
+          id: iId >= 0 ? row[iId] : undefined,
+          alumneId,
+          anyCurs: iAny >= 0 ? row[iAny] : any,
+          data: iData >= 0 ? row[iData] : undefined,
+          acords: iAcords >= 0 ? row[iAcords] : undefined,
+          usuariCreadorId: iAuthor >= 0 ? row[iAuthor] : undefined
+        });
+      }
+      return out;
+    } catch (e) {
+      // Si la pestanya no existeix o el format no és l'esperat, retornar buit
+      // eslint-disable-next-line no-console
+      console.warn('listEntrevistes: no es pot llegir el full o el format és desconegut', e);
+      return [];
+    }
   }
 
   async getEntrevista(id: string, anyCurs?: string): Promise<any | null> {
-    const cfg = await this.getConfig();
-    const anys = [anyCurs || cfg.anyActual];
-    for (const any of anys) {
-      const sheet = `Entrevistes_${any}`;
-      const resp = await this.sheets.spreadsheets.values.get({ spreadsheetId: this.spreadsheetId, range: `${sheet}!A1:G10000` });
-      const values = resp.data.values || [];
-      const header = values[0] || [];
-      const rows = values.slice(1).map(r => Object.fromEntries(header.map((h, i) => [h, r[i]])));
-      const row = rows.find(r => r.id === id);
-      if (row) return { id: row.id, alumneId: row.alumneId, anyCurs: row.anyCurs, data: row.data, acords: row.acords, usuariCreadorId: row.usuariCreadorId };
+    try {
+      const cfg = await this.getConfig();
+      const anys = [anyCurs || cfg.anyActual];
+      for (const any of anys) {
+        const sheet = `Entrevistes_${any}`;
+        const resp = await this.sheets.spreadsheets.values.get({ spreadsheetId: this.spreadsheetId, range: `${sheet}!A1:Z10000` });
+        const values = resp.data.values || [];
+        if (values.length === 0) continue;
+        const header = values[0] || [];
+        const headerLc = header.map(h => (h || '').toString().trim().toLowerCase());
+        const idx = (...keys: string[]) => {
+          for (const k of keys) {
+            const i = headerLc.indexOf(k);
+            if (i !== -1) return i;
+          }
+          return -1;
+        };
+        const iId = idx('id', 'entrevistaid');
+        const iAlumne = idx('alumneid', 'alumne_id', 'alumne');
+        const iAny = idx('anycurs', 'any', 'curs');
+        const iData = idx('data', 'fecha');
+        const iAcords = idx('acords', 'acuerdos', 'notes');
+        const iAuthor = idx('usuariCreadorId'.toLowerCase(), 'autor', 'creador');
+
+        for (let r = 1; r < values.length; r++) {
+          const row = values[r];
+          const rid = iId >= 0 ? row[iId] : undefined;
+          if (rid === id) {
+            return {
+              id: rid,
+              alumneId: iAlumne >= 0 ? row[iAlumne] : undefined,
+              anyCurs: iAny >= 0 ? row[iAny] : any,
+              data: iData >= 0 ? row[iData] : undefined,
+              acords: iAcords >= 0 ? row[iAcords] : undefined,
+              usuariCreadorId: iAuthor >= 0 ? row[iAuthor] : undefined
+            };
+          }
+        }
+      }
+      return null;
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.warn('getEntrevista: error llegint full', e);
+      return null;
     }
-    return null;
   }
 
   async createEntrevista(data: { alumneId: string; data: string; acords: string; usuariCreadorId: string }): Promise<string> {

@@ -16,14 +16,16 @@ router.get('/', async (req: Request, res: Response) => {
   const params: any[] = [];
   if (alumneId) { where.push(`alumne_id = $${params.length + 1}`); params.push(alumneId); }
   if (anyCurs) { where.push(`any_curs = $${params.length + 1}`); params.push(anyCurs); }
-  const repo = new SheetsRepo(createSheetsClient(), process.env.SHEETS_SPREADSHEET_ID!);
+  const spreadsheetId = (req.query.spreadsheetId as string) || process.env.SHEETS_SPREADSHEET_ID!;
+  const repo = new SheetsRepo(createSheetsClient(), spreadsheetId);
   const items = await repo.listEntrevistes({ alumneId, anyCurs });
   res.json(items);
 });
 
 router.get('/:id', async (req: Request, res: Response) => {
   const id = req.params.id;
-  const repo = new SheetsRepo(createSheetsClient(), process.env.SHEETS_SPREADSHEET_ID!);
+  const spreadsheetId = (req.query.spreadsheetId as string) || process.env.SHEETS_SPREADSHEET_ID!;
+  const repo = new SheetsRepo(createSheetsClient(), spreadsheetId);
   const r = await repo.getEntrevista(id);
   if (!r) return res.status(404).json({ error: 'No trobat' });
   res.json(r);
@@ -40,7 +42,8 @@ router.post('/', requireRole(['docent','admin']), async (req: Request, res: Resp
   if (!parsed.success) return res.status(400).json({ error: 'Dades requerides incompletes' });
   const anyActual = await getAnyActual();
   if (!anyActual) return res.status(400).json({ error: 'Dades requerides incompletes' });
-  const repo = new SheetsRepo(createSheetsClient(), process.env.SHEETS_SPREADSHEET_ID!);
+  const spreadsheetId = (req.query.spreadsheetId as string) || process.env.SHEETS_SPREADSHEET_ID!;
+  const repo = new SheetsRepo(createSheetsClient(), spreadsheetId);
   const id = await repo.createEntrevista({ alumneId: parsed.data.alumneId, data: parsed.data.data, acords: parsed.data.acords, usuariCreadorId: req.user!.email });
   res.status(201).json({ id, status: 'created' });
 });
@@ -54,7 +57,8 @@ router.put('/:id', requireRole(['docent','admin']), async (req: Request, res: Re
   const parsed = updateSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: 'Dades requerides incompletes' });
   const anyActual = await getAnyActual();
-  const repo = new SheetsRepo(createSheetsClient(), process.env.SHEETS_SPREADSHEET_ID!);
+  const spreadsheetId = (req.query.spreadsheetId as string) || process.env.SHEETS_SPREADSHEET_ID!;
+  const repo = new SheetsRepo(createSheetsClient(), spreadsheetId);
   const current = await repo.getEntrevista(id);
   if (!current) return res.status(404).json({ error: 'No trobat' });
   const isAuthor = current.usuariCreadorId?.toLowerCase() === req.user!.email;

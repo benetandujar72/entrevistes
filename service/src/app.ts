@@ -1,10 +1,17 @@
 import express from 'express';
+import cors from 'cors';
 import alumnes from './routes/alumnes.js';
 import entrevistes from './routes/entrevistes.js';
 import cursos from './routes/cursos.js';
 
 export function createApp() {
   const app = express();
+  app.use(
+    cors({
+      origin: ['http://localhost:5173', 'http://localhost:5174'],
+      credentials: true
+    })
+  );
   app.use(express.json());
   app.use('/alumnes', alumnes);
   app.use('/entrevistes', entrevistes);

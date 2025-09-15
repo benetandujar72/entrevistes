@@ -1,0 +1,40 @@
+version: "3.9"
+services:
+  db:
+    image: postgres:16
+    container_name: entrevistes-db
+    environment:
+      POSTGRES_USER: entrevistes
+      POSTGRES_PASSWORD: entrevistes
+      POSTGRES_DB: entrevistes
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U entrevistes"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  service:
+    build: ./service
+    container_name: entrevistes-service
+    environment:
+      PORT: 8080
+      ALLOWED_DOMAIN: insbitacola.cat
+      DATABASE_URL: postgresql://entrevistes:entrevistes@db:5432/entrevistes
+      # Credenciales Google (usa tus valores reales via .env local o secrets)
+      GOOGLE_CLIENT_EMAIL: ${GOOGLE_CLIENT_EMAIL}
+      GOOGLE_PRIVATE_KEY: ${GOOGLE_PRIVATE_KEY}
+      SHEETS_SPREADSHEET_ID: ${SHEETS_SPREADSHEET_ID}
+      ANY_ACTUAL: ${ANY_ACTUAL:-2025-2026}
+      DISABLE_AUTH: ${DISABLE_AUTH:-1}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+
+volumes:
+  db_data:
