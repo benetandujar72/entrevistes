@@ -59,6 +59,12 @@
   }
 </script>
 
+<svelte:head>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <meta name="google-signin-client_id" content="582773400896-0io28jocfebl0aec7u5bnr6up367chs6.apps.googleusercontent.com" />
+  <meta name="referrer" content="no-referrer-when-downgrade" />
+</svelte:head>
+
 <main style="min-height:100dvh; display:flex; align-items:center; justify-content:center; padding:24px; background: linear-gradient(180deg,#f8fafc,#eef2ff);">
   <div style="width:100%; max-width:420px; background:#fff; border:1px solid #e5e7eb; border-radius:16px; padding:24px; box-shadow: 0 10px 30px rgba(0,0,0,0.06);">
     <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">

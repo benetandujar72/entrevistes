@@ -49,9 +49,10 @@ services:
       service:
         condition: service_healthy
     environment:
+      - PORT=3000
       - VITE_BACKEND_BASE=http://localhost:8080
     ports:
-      - "5174:5173"
+      - "3000:3000"
 
 volumes:
   db_data:
