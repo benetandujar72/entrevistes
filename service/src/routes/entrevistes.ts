@@ -73,7 +73,44 @@ router.post('/', requireRole(['docent','admin']), async (req: Request, res: Resp
   if (!anyActual) return res.status(400).json({ error: 'Dades requerides incompletes' });
   const spreadsheetId = (req.query.spreadsheetId as string) || process.env.SHEETS_SPREADSHEET_ID!;
   const repo = new SheetsRepo(createSheetsClient(), spreadsheetId);
+  // Si és docent, validar que pot crear per aquest alumne (grup assignat o tutor)
+  if (req.user?.role === 'docent') {
+    const email = req.user.email;
+    const alumneId = parsed.data.alumneId;
+    // Comprovar tutoría directa
+    const t = await query<{ exists: boolean }>(
+      `SELECT EXISTS(
+         SELECT 1 FROM tutories_alumne WHERE alumne_id=$1 AND any_curs=$2 AND tutor_email=$3
+       ) AS exists`,
+      [alumneId, anyActual, email]
+    );
+    let allowed = t.rows[0]?.exists === true;
+    if (!allowed) {
+      // Comprovar assignació a grup de l'alumne en el curs actual
+      const r = await query<{ exists: boolean }>(
+        `SELECT EXISTS(
+           SELECT 1
+           FROM alumnes_curs ac
+           JOIN assignacions_docent_grup adg ON adg.grup_id = ac.grup_id AND adg.any_curs = ac.any_curs AND adg.email = $3
+           WHERE ac.alumne_id = $1 AND ac.any_curs = $2
+         ) AS exists`,
+        [alumneId, anyActual, email]
+      );
+      allowed = r.rows[0]?.exists === true;
+    }
+    if (!allowed) return res.status(403).json({ error: 'Permís denegat' });
+  }
+  // Crear a Sheets
   const id = await repo.createEntrevista({ alumneId: parsed.data.alumneId, data: parsed.data.data, acords: parsed.data.acords, usuariCreadorId: req.user!.email });
+  // Persistir també a BD (millor consistència per llistats històrics)
+  try {
+    await query(
+      `INSERT INTO entrevistes(id, alumne_id, any_curs, data, acords, usuari_creador_id)
+       VALUES ($1,$2,$3,$4,$5,$6)
+       ON CONFLICT (id) DO NOTHING`,
+      [id, parsed.data.alumneId, anyActual, parsed.data.data, parsed.data.acords || null, req.user!.email]
+    );
+  } catch {}
   res.status(201).json({ id, status: 'created' });
 });
 
