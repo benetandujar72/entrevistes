@@ -7,6 +7,15 @@ import { z } from 'zod';
 
 const router = Router();
 router.use(requireAuth());
+// Llistar cursos (per solucionar "carregant cursos")
+router.get('/', async (_req: Request, res: Response) => {
+  try {
+    const r = await query<{ any_curs: string }>('SELECT any_curs FROM cursos ORDER BY any_curs DESC');
+    res.json(r.rows.map((x) => ({ any: x.any_curs, grups: [] })));
+  } catch {
+    res.json([]);
+  }
+});
 
 const createSchema = z.object({
   anyCurs: z.string().min(4),

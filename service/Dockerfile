@@ -20,4 +20,6 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY package.json ./
 EXPOSE 8080
+HEALTHCHECK --interval=10s --timeout=3s --retries=5 --start-period=5s \
+  CMD node -e "fetch('http://localhost:8080/health').then(r=>{if(r.ok)process.exit(0);process.exit(1)}).catch(()=>process.exit(1))"
 CMD ["node","dist/index.js"]

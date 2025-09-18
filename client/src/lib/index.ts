@@ -21,10 +21,20 @@ export type Curs = {
 };
 
 const BASE = 'http://localhost:8080';
+import { getToken } from './auth';
 
 export async function fetchAlumnes(): Promise<Alumne[]> {
-  const res = await fetch(`${BASE}/alumnes`);
+  const spreadsheetId = getSelectedSpreadsheetId();
+  const qs = spreadsheetId ? `?spreadsheetId=${encodeURIComponent(spreadsheetId)}` : '';
+  const res = await fetch(`${BASE}/alumnes${qs}`, { headers: authHeaders() });
   if (!res.ok) throw new Error('Error carregant alumnes');
+  return res.json();
+}
+
+export async function fetchAlumnesDb(params?: { anyCurs?: string }): Promise<Alumne[]> {
+  const qs = params?.anyCurs ? `?anyCurs=${encodeURIComponent(params.anyCurs)}` : '';
+  const res = await fetch(`${BASE}/alumnes-db${qs}`, { headers: authHeaders() });
+  if (!res.ok) throw new Error('Error carregant alumnes (BD)');
   return res.json();
 }
 
@@ -37,13 +47,13 @@ export async function fetchHealth(): Promise<{ status: string }> {
 export async function fetchEntrevistes(): Promise<Entrevista[]> {
   const spreadsheetId = getSelectedSpreadsheetId();
   const qs = spreadsheetId ? `?spreadsheetId=${encodeURIComponent(spreadsheetId)}` : '';
-  const res = await fetch(`${BASE}/entrevistes${qs}`);
+  const res = await fetch(`${BASE}/entrevistes${qs}`, { headers: authHeaders() });
   if (!res.ok) throw new Error('Error carregant entrevistes');
   return res.json();
 }
 
 export async function fetchCursos(): Promise<Curs[]> {
-  const res = await fetch(`${BASE}/cursos`);
+  const res = await fetch(`${BASE}/cursos`, { headers: authHeaders() });
   if (!res.ok) throw new Error('Error carregant cursos');
   return res.json();
 }
@@ -73,8 +83,13 @@ export function setSelectedCourse(course: keyof ConfigSpreadsheets) {
 }
 
 export function getSelectedCourse(): keyof ConfigSpreadsheets | undefined {
-  const v = localStorage.getItem('entrevistes.selectedCourse') as keyof ConfigSpreadsheets | null;
-  return v || undefined;
+  try {
+    if (typeof localStorage === 'undefined') return undefined as any;
+    const v = localStorage.getItem('entrevistes.selectedCourse') as keyof ConfigSpreadsheets | null;
+    return v || undefined;
+  } catch {
+    return undefined as any;
+  }
 }
 
 export function getSelectedSpreadsheetId(): string | undefined {
@@ -82,6 +97,11 @@ export function getSelectedSpreadsheetId(): string | undefined {
   if (!course) return undefined;
   const cfg = loadConfigSpreadsheets();
   return (cfg as any)[course];
+}
+
+export function authHeaders(): HeadersInit {
+  const t = getToken();
+  return t ? { Authorization: `Bearer ${t}` } : {};
 }
 
 // place files you want to import through the `$lib` alias in this folder.

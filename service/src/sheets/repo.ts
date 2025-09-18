@@ -11,38 +11,57 @@ export class SheetsRepo {
   }
 
   async getConfig(): Promise<Record<string, any>> {
-    const range = 'Config!A2:B1000';
-    const resp = await this.sheets.spreadsheets.values.get({ spreadsheetId: this.spreadsheetId, range });
-    const rows = resp.data.values || [];
-    const out: Record<string, any> = {};
-    for (const r of rows) {
-      const k = (r[0] || '').trim();
-      if (!k) continue;
-      let v: any = r[1];
-      try { v = JSON.parse(r[1]); } catch { /* keep as string */ }
-      out[k] = v;
+    try {
+      const range = 'Config!A2:B1000';
+      const resp = await this.sheets.spreadsheets.values.get({ spreadsheetId: this.spreadsheetId, range });
+      const rows = resp.data.values || [];
+      const out: Record<string, any> = {};
+      for (const r of rows) {
+        const k = (r[0] || '').trim();
+        if (!k) continue;
+        let v: any = r[1];
+        try { v = JSON.parse(r[1]); } catch { /* keep as string */ }
+        out[k] = v;
+      }
+      return out;
+    } catch (e) {
+      // Fallback: si falla Sheets, intentar con variable de entorno ANY_ACTUAL
+      const any = process.env.ANY_ACTUAL || '2025-2026';
+      return { anyActual: any };
     }
-    return out;
   }
 
   // Alumnes_<CURS>
   async listAlumnes(params: { grup?: string; anyCurs?: string; estat?: string }): Promise<any[]> {
     const anyCurs = params.anyCurs || (await this.getConfig()).anyActual;
     const sheet = `Alumnes_${anyCurs}`;
-    const resp = await this.sheets.spreadsheets.values.get({ spreadsheetId: this.spreadsheetId, range: `${sheet}!A1:H10000` });
-    const values = resp.data.values || [];
+    let values: any[][] = [];
+    try {
+      const resp = await this.sheets.spreadsheets.values.get({ spreadsheetId: this.spreadsheetId, range: `${sheet}!A1:H10000` });
+      values = resp.data.values || [];
+    } catch {
+      // fallback a vacío si no existe la hoja
+      values = [];
+    }
+    if (values.length === 0) return [];
     const header = values[0] || [];
     const rows = values.slice(1).map(r => Object.fromEntries(header.map((h, i) => [h, r[i]])));
-    return rows.filter(r => (!params.grup || r.grup === params.grup) && (!params.estat || r.estat === params.estat))
-      .map(r => ({ id: r.alumneId, nom: r.nom, grup: r.grup, estat: r.estat }));
+    return rows
+      .filter(r => (!params.grup || r.grup === r.grup) && (!params.estat || r.estat === params.estat))
+      .map(r => ({ id: r.alumneId, nom: r.nom, grup: r.grup, estat: r.estat, anyCurs }));
   }
 
   async getAlumneFull(id: string): Promise<any | null> {
     const cfg = await this.getConfig();
     const anyCurs = cfg.anyActual;
     const sheet = `Alumnes_${anyCurs}`;
-    const resp = await this.sheets.spreadsheets.values.get({ spreadsheetId: this.spreadsheetId, range: `${sheet}!A1:H10000` });
-    const values = resp.data.values || [];
+    let values: any[][] = [];
+    try {
+      const resp = await this.sheets.spreadsheets.values.get({ spreadsheetId: this.spreadsheetId, range: `${sheet}!A1:H10000` });
+      values = resp.data.values || [];
+    } catch {
+      return null;
+    }
     const header = values[0] || [];
     const rows = values.slice(1).map(r => Object.fromEntries(header.map((h, i) => [h, r[i]])));
     const row = rows.find(r => r.alumneId === id);

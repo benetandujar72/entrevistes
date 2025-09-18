@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { requireAuth, requireRole } from '../middleware/auth.js';
-import { getAnyActual } from '../db.js';
+import { getAnyActual, query } from '../db.js';
 import { createSheetsClient } from '../sheets/client.js';
 import { SheetsRepo } from '../sheets/repo.js';
 import { z } from 'zod';
@@ -16,10 +16,33 @@ router.get('/', async (req: Request, res: Response) => {
   const params: any[] = [];
   if (alumneId) { where.push(`alumne_id = $${params.length + 1}`); params.push(alumneId); }
   if (anyCurs) { where.push(`any_curs = $${params.length + 1}`); params.push(anyCurs); }
-  const spreadsheetId = (req.query.spreadsheetId as string) || process.env.SHEETS_SPREADSHEET_ID!;
-  const repo = new SheetsRepo(createSheetsClient(), spreadsheetId);
-  const items = await repo.listEntrevistes({ alumneId, anyCurs });
-  res.json(items);
+  try {
+    const spreadsheetId = (req.query.spreadsheetId as string) || process.env.SHEETS_SPREADSHEET_ID!;
+    const repo = new SheetsRepo(createSheetsClient(), spreadsheetId);
+    let items = await repo.listEntrevistes({ alumneId, anyCurs });
+
+  if (req.user?.role === 'docent') {
+    const any = (anyCurs || (await getAnyActual()) || '').toString();
+    const email = req.user.email;
+    // Obtener grupos asignados al docente
+    const r = await query<{ nom: string }>(
+      `SELECT g.nom FROM assignacions_docent_grup adg
+       JOIN grups g ON g.grup_id = adg.grup_id
+       WHERE adg.email=$1 AND adg.any_curs=$2`,
+      [email, any]
+    );
+    const allowedGroups = new Set(r.rows.map((x) => x.nom));
+    // Mapear alumnos del curso por grupo
+    const alumnes = await repo.listAlumnes({ anyCurs: any });
+    const allowedAlumneIds = new Set(alumnes.filter((a) => allowedGroups.has(a.grup)).map((a) => a.id));
+    // Filtrar entrevistas por alumnos permitidos (y curso)
+    items = items.filter((e) => e.anyCurs === any && (!e.alumneId || allowedAlumneIds.has(e.alumneId)));
+  }
+    res.json(items);
+  } catch (e) {
+    // No bloquear: si falla Sheets, devolver vacío
+    res.json([]);
+  }
 });
 
 router.get('/:id', async (req: Request, res: Response) => {

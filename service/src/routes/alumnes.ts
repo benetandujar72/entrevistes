@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { createSheetsClient } from '../sheets/client.js';
 import { SheetsRepo } from '../sheets/repo.js';
+import { query } from '../db.js';
 import { z } from 'zod';
 import { ulid } from 'ulid';
 
@@ -10,9 +11,30 @@ const router = Router();
 router.use(requireAuth());
 
 router.get('/', async (req: Request, res: Response) => {
-  const repo = new SheetsRepo(createSheetsClient(), process.env.SHEETS_SPREADSHEET_ID!);
-  const items = await repo.listAlumnes({ grup: req.query.grup as string, anyCurs: req.query.anyCurs as string, estat: req.query.estat as string });
-  res.json(items);
+  const anyCurs = (req.query.anyCurs as string) || undefined;
+  try {
+    const spreadsheetId = (req.query.spreadsheetId as string) || process.env.SHEETS_SPREADSHEET_ID!;
+    const repo = new SheetsRepo(createSheetsClient(), spreadsheetId);
+    const items = await repo.listAlumnes({ anyCurs, estat: req.query.estat as string });
+
+  // Si es docent, filtrar por grupos asignados en DB
+  if (req.user?.role === 'docent') {
+    const email = req.user.email;
+    const ac = anyCurs || (await (await import('../db.js')).getAnyActual());
+    const r = await query<{ nom: string }>(
+      `SELECT g.nom FROM assignacions_docent_grup adg
+       JOIN grups g ON g.grup_id = adg.grup_id
+       WHERE adg.email=$1 AND adg.any_curs=$2`,
+      [email, ac]
+    );
+    const allowed = new Set(r.rows.map((x) => x.nom));
+    return res.json(items.filter((a) => allowed.has(a.grup)));
+  }
+
+    res.json(items);
+  } catch (e) {
+    res.json([]);
+  }
 });
 
 const createSchema = z.object({
