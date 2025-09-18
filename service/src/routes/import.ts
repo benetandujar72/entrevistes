@@ -341,8 +341,8 @@ async function readEntrevistesWithHistoric(spreadsheetId: string, nivell: '1r'|'
   for (const it of current) out.push({ ...it, any: anyCurs });
   // Históricos
   for (const h of pastLevels(nivell)) {
-    // Para histórico, leer siempre a partir de columnas G-H (índice 6)
-    const byAlum = await readEsoEntrevistesByAlumne({ spreadsheetId, nivell: h.lvl, startColIndex: 6 });
+    // Para histórico, leer a partir de las primeras parejas D/E (índice 3)
+    const byAlum = await readEsoEntrevistesByAlumne({ spreadsheetId, nivell: h.lvl, startColIndex: 3 });
     const rows = byAlum.flatMap(a => a.entrevistes.map(e => ({ nom: a.nom, when: e.when, acords: e.acords })));
     const anyPast = shiftAnyCurs(anyCurs, h.offset);
     for (const it of rows) out.push({ ...it, any: anyPast });
