@@ -7,6 +7,23 @@ const router = Router();
 
 router.use(requireAuth());
 
+// Identidad del usuario autenticado
+router.get('/me', async (req: Request, res: Response) => {
+  try {
+    if (!req.user) return res.status(403).json({ error: 'Permís denegat' });
+    // Confirmar rol desde BD si es posible
+    try {
+      const r = await query<{ rol: 'docent' | 'admin' }>('SELECT rol FROM usuaris WHERE email=$1', [req.user.email]);
+      if (r.rowCount && (r.rows[0].rol === 'admin' || r.rows[0].rol === 'docent')) {
+        return res.json({ email: req.user.email, role: r.rows[0].rol });
+      }
+    } catch {}
+    return res.json({ email: req.user.email, role: req.user.role });
+  } catch (e) {
+    return res.status(500).json({ error: 'Error intern' });
+  }
+});
+
 const upsertSchema = z.object({
   email: z.string().email(),
   rol: z.enum(['admin', 'docent'])

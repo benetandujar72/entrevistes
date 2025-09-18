@@ -110,6 +110,67 @@ router.post('/import', requireRole(['admin']), async (req: Request, res: Respons
   res.json({ importats, status: 'ok' });
 });
 
+// Listar tutorías de alumnos (admin)
+router.get('/tutories', requireRole(['admin']), async (_req: Request, res: Response) => {
+  const r = await query<{ alumne_id: string; tutor_email: string; any_curs: string }>(
+    'SELECT alumne_id, tutor_email, any_curs FROM tutories_alumne ORDER BY any_curs, alumne_id'
+  );
+  res.json(r.rows);
+});
+
+// Import CSV de tutorías alumno-tutor (admin)
+// Columnas mínimas: anyCurs, alumne_id | alumne_nom, tutor_email
+const importTutoriesSchema = z.object({ csvBase64: z.string() });
+router.post('/tutories/import', requireRole(['admin']), async (req: Request, res: Response) => {
+  const parsed = importTutoriesSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: 'Dades requerides incompletes' });
+  const csvText = Buffer.from(parsed.data.csvBase64, 'base64').toString('utf8');
+  const lines = csvText.split(/\r?\n/).filter((l) => l.trim().length > 0);
+  if (lines.length <= 1) return res.status(400).json({ error: 'CSV buit' });
+  const header = lines[0].split(',').map((h) => h.trim().toLowerCase());
+  const idx = (k: string) => header.indexOf(k);
+  const iAny = idx('anycurs');
+  const iAlumneId = idx('alumne_id');
+  const iAlumneNom = idx('alumne_nom');
+  const iTutor = idx('tutor_email');
+  if (iAny < 0 || iTutor < 0 || (iAlumneId < 0 && iAlumneNom < 0)) return res.status(400).json({ error: 'Capçaleres requerides: anyCurs,tutor_email,(alumne_id|alumne_nom)' });
+
+  let importats = 0; let ambigus = 0; let errors = 0;
+  await withTransaction(async (tx) => {
+    for (let r = 1; r < lines.length; r++) {
+      const cols = lines[r].split(',');
+      if (cols.length < header.length) continue;
+      const anyCurs = cols[iAny]?.trim();
+      const tutor = cols[iTutor]?.trim().toLowerCase();
+      if (!anyCurs || !tutor) { errors++; continue; }
+      let alumneId = iAlumneId >= 0 ? cols[iAlumneId]?.trim() : '';
+      if (!alumneId) {
+        const nom = (iAlumneNom >= 0 ? cols[iAlumneNom] : '').trim();
+        if (!nom) { errors++; continue; }
+        // Resolver por nombre dentro del curso
+        const r = await tx.query<{ alumne_id: string }>(
+          `SELECT a.alumne_id FROM alumnes a
+           JOIN alumnes_curs ac ON ac.alumne_id = a.alumne_id
+           WHERE ac.any_curs=$1 AND a.nom=$2`,
+          [anyCurs, nom]
+        );
+        if (r.rowCount !== 1) { ambigus++; continue; }
+        alumneId = r.rows[0].alumne_id;
+      }
+      await tx.query('INSERT INTO cursos(any_curs) VALUES ($1) ON CONFLICT (any_curs) DO NOTHING', [anyCurs]);
+      await tx.query(
+        `INSERT INTO tutories_alumne(alumne_id, tutor_email, any_curs)
+         VALUES($1,$2,$3)
+         ON CONFLICT(alumne_id, any_curs) DO UPDATE SET tutor_email=EXCLUDED.tutor_email`,
+        [alumneId, tutor, anyCurs]
+      );
+      importats++;
+    }
+  });
+
+  res.json({ importats, ambigus, errors, status: 'ok' });
+});
+
 export default router;
 
 

@@ -34,7 +34,13 @@ router.get('/', async (req: Request, res: Response) => {
     const allowedGroups = new Set(r.rows.map((x) => x.nom));
     // Mapear alumnos del curso por grupo
     const alumnes = await repo.listAlumnes({ anyCurs: any });
-    const allowedAlumneIds = new Set(alumnes.filter((a) => allowedGroups.has(a.grup)).map((a) => a.id));
+    const allowedAlumneIdsByGroup = new Set(alumnes.filter((a) => allowedGroups.has(a.grup)).map((a) => a.id));
+    // Añadir alumnos por tutorías
+    const r2 = await query<{ alumne_id: string }>(
+      `SELECT alumne_id FROM tutories_alumne WHERE tutor_email=$1 AND any_curs=$2`,
+      [email, any]
+    );
+    const allowedAlumneIds = new Set<string>([...allowedAlumneIdsByGroup, ...r2.rows.map((x) => x.alumne_id)]);
     // Filtrar entrevistas por alumnos permitidos (y curso)
     items = items.filter((e) => e.anyCurs === any && (!e.alumneId || allowedAlumneIds.has(e.alumneId)));
   }

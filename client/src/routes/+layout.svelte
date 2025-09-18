@@ -20,6 +20,7 @@
 	// Svelte 5: usar $state para reactividad segura
 	let mobileOpen = $state(false);
     let isAdmin = $state(false);
+    let userEmail = $state('');
     const ADMIN_KEY = 'entrevistes.isAdmin';
     let dark = $state(false);
     const THEME_KEY = 'entrevistes.theme';
@@ -30,8 +31,14 @@
         const t = getToken();
         authed = !!t;
         const current = $page.url.pathname;
+        // Solo permitir la página raíz de login cuando no hay token
         if (!t && current !== '/') {
             location.href = '/';
+            return;
+        }
+        // Si hay token y estamos en "/", enviar a dashboard
+        if (t && current === '/') {
+            location.href = '/dashboard';
             return;
         }
         // Cargar estado isAdmin persistido
@@ -44,16 +51,17 @@
             dark = (localStorage.getItem(THEME_KEY) || 'light') === 'dark';
             document.documentElement.dataset.theme = dark ? 'dark' : 'light';
         } catch {}
-        // Verificar admin (no bloquear UI si falla; solo actualiza flag)
+        // Obtener rol via /usuaris/me
         if (t) {
             try {
-                const r = await fetch('http://localhost:8080/usuaris', { headers: { Authorization: `Bearer ${t}` } });
-                const ok = r.ok;
-                isAdmin = ok;
-                try { localStorage.setItem(ADMIN_KEY, ok ? '1' : '0'); } catch {}
-            } catch {
-                // Mantener el valor previo (persistido) para no ocultar el menú si el backend tarda
-            }
+                const r = await fetch('http://localhost:8080/usuaris/me', { headers: { Authorization: `Bearer ${t}` } });
+                if (r.ok) {
+                    const me = await r.json();
+                    isAdmin = me?.role === 'admin';
+                    userEmail = me?.email || '';
+                    try { localStorage.setItem(ADMIN_KEY, isAdmin ? '1' : '0'); } catch {}
+                }
+            } catch {}
         }
     });
 
@@ -84,7 +92,10 @@
 				<img src={favicon} alt="logo" width="22" height="22" />
 				<strong>Entrevistes</strong>
 			</div>
-			<div style="display:flex; gap:8px;">
+        <div style="display:flex; gap:8px; align-items:center;">
+            {#if authed}
+                <span style="font-size:12px; color:#94a3b8;">{userEmail}</span>
+            {/if}
 				<button onclick={toggleTheme} style="padding:6px 10px; border:1px solid var(--btn-border); background: var(--btn-bg); color: var(--btn-fg); border-radius:8px; display:flex; align-items:center; gap:8px; cursor:pointer;">
 					<img src={dark ? sunIcon : moonIcon} alt="" width="16" height="16" />
 					<span style="font-size:12px;">{dark ? 'Clar' : 'Fosc'}</span>
@@ -100,10 +111,11 @@
 			<div style="padding:18px 12px 6px; color:#94a3b8; font-size:12px;">Configuració</div>
 			<a href="/config" style="padding:10px 12px; border-radius:10px; color:#e5e7eb; text-decoration:none; display:flex; align-items:center; gap:10px;"><img src={settingsIcon} alt="" width="18" height="18" /> <span>Config</span></a>
 			<a href="/diagnostic" style="padding:10px 12px; border-radius:10px; color:#e5e7eb; text-decoration:none; display:flex; align-items:center; gap:10px;"><img src={settingsIcon} alt="" width="18" height="18" /> <span>Diagnòstic</span></a>
-			{#if isAdmin}
+            {#if isAdmin}
 				<div style="padding:18px 12px 6px; color:#94a3b8; font-size:12px;">Administració</div>
 				<a href="/admin/usuaris" style="padding:10px 12px; border-radius:10px; color:#e5e7eb; text-decoration:none; display:flex; align-items:center; gap:10px;"><img src={userIcon} alt="" width="18" height="18" /> <span>Usuaris</span></a>
-				<a href="/admin/assignacions" style="padding:10px 12px; border-radius:10px; color:#e5e7eb; text-decoration:none; display:flex; align-items:center; gap:10px;"><img src={usersIcon} alt="" width="18" height="18" /> <span>Assignacions</span></a>
+                <a href="/admin/assignacions" style="padding:10px 12px; border-radius:10px; color:#e5e7eb; text-decoration:none; display:flex; align-items:center; gap:10px;"><img src={usersIcon} alt="" width="18" height="18" /> <span>Assignacions</span></a>
+                <a href="/admin/tutories" style="padding:10px 12px; border-radius:10px; color:#e5e7eb; text-decoration:none; display:flex; align-items:center; gap:10px;"><img src={usersIcon} alt="" width="18" height="18" /> <span>Tutories</span></a>
 			{/if}
 		</nav>
 	</aside>
@@ -113,9 +125,16 @@
 
 </div>
 {:else}
-<main style="flex:1; padding:24px; background: var(--bg); color: var(--fg);">
-    {@render children?.()}
-</main>
+<!-- No autenticado: solo renderizamos la página de login (ruta '/') sin menú -->
+{#if $page.url.pathname === '/'}
+    <main style="flex:1; padding:0; background: var(--bg); color: var(--fg);">
+        {@render children?.()}
+    </main>
+{:else}
+    <main style="min-height:100dvh; display:grid; place-items:center; background: var(--bg); color: var(--fg);">
+        <div style="padding:16px; border:1px solid #e5e7eb; background:#fff; border-radius:12px;">Redirigint al login…</div>
+    </main>
+{/if}
 {/if}
 
 <style>

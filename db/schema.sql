@@ -114,6 +114,15 @@ CREATE TABLE IF NOT EXISTS assignacions_docent_grup (
     PRIMARY KEY(email, grup_id, any_curs)
 );
 
+-- ========= Tutorías personales por alumno (por curso) ========
+CREATE TABLE IF NOT EXISTS tutories_alumne (
+    alumne_id TEXT NOT NULL REFERENCES alumnes(alumne_id) ON DELETE CASCADE,
+    tutor_email TEXT NOT NULL REFERENCES usuaris(email) ON DELETE CASCADE,
+    any_curs TEXT NOT NULL REFERENCES cursos(any_curs) ON DELETE CASCADE,
+    PRIMARY KEY(alumne_id, any_curs)
+);
+CREATE INDEX IF NOT EXISTS idx_tutories_tutor ON tutories_alumne(tutor_email, any_curs);
+
 -- ========= Auditoria ========
 CREATE TABLE IF NOT EXISTS auditoria (
     id BIGSERIAL PRIMARY KEY,

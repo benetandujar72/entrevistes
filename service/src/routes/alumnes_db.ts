@@ -12,8 +12,9 @@ router.get('/', async (req: Request, res: Response) => {
   const anyCurs = anyCursParam || (await getAnyActual());
   if (!anyCurs) return res.json([]);
 
-  // Si es docent, filtrar por grupos asignados en DB
+  // Si es docent, filtrar por grupos asignados en DB o tutorías
   let allowedGroupIds: Set<string> | null = null;
+  let allowedAlumneIds: Set<string> | null = null;
   if (req.user?.role === 'docent') {
     const r = await query<{ grup_id: string }>(
       `SELECT adg.grup_id
@@ -22,6 +23,11 @@ router.get('/', async (req: Request, res: Response) => {
       [req.user.email, anyCurs]
     );
     allowedGroupIds = new Set(r.rows.map((x) => x.grup_id));
+    const r2 = await query<{ alumne_id: string }>(
+      `SELECT alumne_id FROM tutories_alumne WHERE tutor_email=$1 AND any_curs=$2`,
+      [req.user.email, anyCurs]
+    );
+    allowedAlumneIds = new Set(r2.rows.map((x) => x.alumne_id));
   }
 
   const r = await query<{
@@ -41,11 +47,11 @@ router.get('/', async (req: Request, res: Response) => {
 
   const items = r.rows
     .filter((row) => {
-      if (!allowedGroupIds) return true;
-      // Si no tiene grup_id en la fila, lo reconstruimos de nom+anyCurs
-      // pero como no lo seleccionamos aquí, la restricción se basa en presencia de g.nom
-      // Al no poder determinar grup_id, filtramos por nombre de grupo vía subconsulta si es necesario.
-      return true;
+      if (!allowedGroupIds && !allowedAlumneIds) return true;
+      // permitir si está en grupo permitido o si el alumno está asignado por tutoría
+      const inGroup = allowedGroupIds ? allowedGroupIds.has(`${row.grup || ''}_${row.any_curs}`) : false;
+      const inTutory = allowedAlumneIds ? allowedAlumneIds.has(row.id) : false;
+      return inGroup || inTutory;
     })
     .map((row) => ({ id: row.id, nom: row.nom, grup: row.grup || '', anyCurs: row.any_curs, estat: row.estat }));
 

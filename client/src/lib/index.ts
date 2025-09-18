@@ -20,6 +20,9 @@ export type Curs = {
   grups: string[];
 };
 
+export type Me = { email: string; role: 'admin'|'docent' };
+export type Tutoria = { alumne_id: string; tutor_email: string; any_curs: string };
+
 const BASE = 'http://localhost:8080';
 import { getToken } from './auth';
 
@@ -56,6 +59,30 @@ export async function fetchCursos(): Promise<Curs[]> {
   const res = await fetch(`${BASE}/cursos`, { headers: authHeaders() });
   if (!res.ok) throw new Error('Error carregant cursos');
   return res.json();
+}
+
+export async function fetchMe(): Promise<Me> {
+  const res = await fetch(`${BASE}/usuaris/me`, { headers: authHeaders() });
+  if (!res.ok) throw new Error('No autoritzat');
+  return res.json();
+}
+
+export async function fetchTutories(): Promise<Tutoria[]> {
+  const res = await fetch(`${BASE}/tutors/tutories`, { headers: authHeaders() });
+  if (!res.ok) throw new Error('Error carregant tutories');
+  return res.json();
+}
+
+export async function importTutoriesCsv(csvText: string): Promise<{ importats: number; ambigus: number; errors: number }>{
+  const base64 = btoa(unescape(encodeURIComponent(csvText)));
+  const res = await fetch(`${BASE}/tutors/tutories/import`, {
+    method: 'POST',
+    headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ csvBase64: base64 })
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data?.error || 'Error importació tutories');
+  return data;
 }
 
 // Config local de spreadsheet IDs por curso
