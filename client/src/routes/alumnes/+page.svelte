@@ -4,6 +4,7 @@
 
   let alumnes: Alumne[] = [];
   let q = '';
+  let grup = '';
   let loading = true;
   let error: string | null = null;
 
@@ -24,7 +25,9 @@
     }
   }
 
-  $: filtered = alumnes.filter(a => a.nom.toLowerCase().includes(q.toLowerCase()));
+  $: filtered = alumnes
+    .filter(a => a.nom.toLowerCase().includes(q.toLowerCase()))
+    .filter(a => !grup || (a.grup || '').toLowerCase() === grup.toLowerCase());
 </script>
 
 <section style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
@@ -43,6 +46,10 @@
         <option value="3r">3r ESO</option>
         <option value="4t">4t ESO</option>
       </select>
+    </div>
+    <div>
+      <label for="grup" style="font-size:12px; color:#6b7280;">Grup</label>
+      <input id="grup" placeholder="Ex: 1A, 1B, 2C..." bind:value={grup} style="display:block; padding:10px 12px; border:1px solid #e5e7eb; border-radius:10px; min-width:120px;" />
     </div>
     <div>
       <label for="query" style="font-size:12px; color:#6b7280;">Cercar</label>
@@ -81,6 +88,9 @@
           <strong style="font-size:14px; color:#111827;">{a.nom}</strong>
           <div style="font-size:13px; color:#111827;">Grup: <span style="color:#374151;">{a.grup || '—'}</span></div>
           <div style="font-size:13px; color:#111827;">Curs: <span style="color:#374151;">{a.anyCurs || '—'}</span> · Estat: <span style="color:#374151;">{a.estat || '—'}</span></div>
+          <div style="display:flex; justify-content:flex-end; gap:8px;">
+            <a href={`/alumnes/${a.id}`} style="font-size:12px; padding:6px 10px; border:1px solid #2563eb; background:#2563eb; color:#fff; border-radius:10px; text-decoration:none;">Obrir fitxa</a>
+          </div>
         </article>
       {/each}
     </div>

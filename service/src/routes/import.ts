@@ -412,8 +412,15 @@ router.post('/entrevistes-eso', requireRole(['admin']), async (req: Request, res
         await tx.query('INSERT INTO cursos(any_curs) VALUES ($1) ON CONFLICT (any_curs) DO NOTHING', [any]);
       }
       for (const it of items) {
-        // Buscar alumno por nombre en la tabla general (sin restricción de any)
-        const q = await tx.query<{ alumne_id: string }>('SELECT alumne_id FROM alumnes WHERE nom=$1 LIMIT 1', [it.nom]);
+        // Buscar alumno por nombre dentro del curso correspondiente (case-insensitive)
+        const q = await tx.query<{ alumne_id: string }>(
+          `SELECT a.alumne_id
+           FROM alumnes a
+           JOIN alumnes_curs ac ON ac.alumne_id = a.alumne_id
+           WHERE ac.any_curs = $1 AND lower(trim(a.nom)) = lower(trim($2))
+           LIMIT 1`,
+          [it.any, it.nom]
+        );
         const alumneId = q.rows[0]?.alumne_id;
         if (!alumneId) { senseId++; continue; }
         const id = ulid();
