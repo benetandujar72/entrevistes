@@ -1,0 +1,36 @@
+# Excluir directorio del servicio (no necesario para Vercel)
+service/
+service/**
+!service/package.json
+
+# Excluir archivos de desarrollo
+node_modules/
+.env
+.env.local
+.env.production
+
+# Excluir archivos de Docker
+docker-compose*.yml
+Dockerfile*
+nginx/
+
+# Excluir archivos de backup y scripts
+*.sql
+*.sh
+*.ps1
+*.bat
+backup-*
+restore-*
+monitor-*
+diagnostico*
+solucion*
+
+# Excluir archivos de datos
+*.csv
+*.json
+client_secret_*.json
+
+# Excluir directorios de desarrollo
+db/
+sheets/
+i18n/

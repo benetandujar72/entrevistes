@@ -1,0 +1,58 @@
+services:
+  db:
+    image: postgres:16
+    container_name: entrevistes-db
+    environment:
+      POSTGRES_USER: entrevistes
+      POSTGRES_PASSWORD: entrevistes
+      POSTGRES_DB: entrevistes
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./db:/docker-entrypoint-initdb.d
+    ports:
+      - "127.0.0.1:5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U entrevistes"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  service:
+    build: ./service
+    container_name: entrevistes-service
+    environment:
+      PORT: 8081
+      ALLOWED_DOMAIN: insbitacola.cat
+      DATABASE_URL: postgresql://entrevistes:entrevistes@db:5432/entrevistes
+      # Credenciales Google (usa tus valores reales via .env local o secrets)
+      GOOGLE_CLIENT_EMAIL: ${GOOGLE_CLIENT_EMAIL}
+      GOOGLE_PRIVATE_KEY: ${GOOGLE_PRIVATE_KEY}
+      SHEETS_SPREADSHEET_ID: ${SHEETS_SPREADSHEET_ID}
+      GOOGLE_CLIENT_ID: 582773400896-0io28jocfebl0aec7u5bnr6up367chs6.apps.googleusercontent.com
+      ANY_ACTUAL: ${ANY_ACTUAL:-2025-2026}
+      DISABLE_AUTH: "1"
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8081:8081"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8081/health || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+  client:
+    build: ./client
+    container_name: entrevistes-client
+    depends_on:
+      service:
+        condition: service_healthy
+    environment:
+      - VITE_BACKEND_BASE=http://localhost:8081
+    ports:
+      - "127.0.0.1:5174:5173"
+
+volumes:
+  db_data:

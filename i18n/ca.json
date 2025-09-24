@@ -1,0 +1,12 @@
+{
+  "menu.alumnes": "Alumnes",
+  "menu.entrevistes": "Entrevistes",
+  "filters.curs": "Curs",
+  "filters.grup": "Grup",
+  "actions.novaEntrevista": "Nova entrevista",
+  "errors.badRequest": "Dades requerides incompletes",
+  "errors.forbidden": "Permís denegat",
+  "errors.notFound": "No trobat"
+}
+
+

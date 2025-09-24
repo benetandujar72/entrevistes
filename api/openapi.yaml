@@ -1,0 +1,361 @@
+openapi: 3.0.3
+info:
+  title: Entrevistes API
+  version: 1.0.0
+  description: API mínima para alumnes, entrevistes, cursos, import/export.
+servers:
+  - url: https://gei.adeptify.es/api
+    description: Producción (on-prem)
+  - url: https://REEMPLAZA-CON-TU-URL-CLoudRun.run.app
+    description: Cloud Run
+paths:
+  /alumnes:
+    get:
+      summary: Lista alumnos
+      parameters:
+        - in: query
+          name: grup
+          schema: { type: string }
+        - in: query
+          name: anyCurs
+          schema: { type: string }
+        - in: query
+          name: estat
+          schema: { type: string, enum: [alta, baixa, migrat] }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AlumneListItem'
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      summary: Alta d'alumne (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlumneCreate'
+      responses:
+        '201': { $ref: '#/components/responses/CreatedWithId' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /alumnes/{id}:
+    get:
+      summary: Fitxa completa de l'alumne
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlumneFull'
+        '404': { $ref: '#/components/responses/NotFound' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    put:
+      summary: Actualiza datos no sensibles (admin)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlumneUpdate'
+      responses:
+        '200': { $ref: '#/components/responses/UpdatedWithId' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /entrevistes:
+    get:
+      summary: Llista entrevistes
+      parameters:
+        - in: query
+          name: alumneId
+          schema: { type: string }
+        - in: query
+          name: anyCurs
+          schema: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EntrevistaListItem'
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      summary: Crea entrevista (any en curs; docent/admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EntrevistaCreate'
+      responses:
+        '201': { $ref: '#/components/responses/CreatedWithId' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /entrevistes/{id}:
+    get:
+      summary: Obté entrevista
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EntrevistaFull'
+        '404': { $ref: '#/components/responses/NotFound' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    put:
+      summary: Actualiza entrevista (any en curs; autor o admin)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EntrevistaUpdate'
+      responses:
+        '200': { $ref: '#/components/responses/UpdatedWithId' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /cursos:
+    post:
+      summary: Crea curs acadèmic i grups
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CursCreate'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  anyCurs: { type: string }
+                  grupsCreats: { type: integer }
+                  status: { type: string }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /importacio:
+    post:
+      summary: Importa alumnes (JSON/CSV)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ImportacioRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  importats: { type: integer }
+                  duplicats: { type: integer }
+                  senseId: { type: integer }
+                  status: { type: string }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /exportacio:
+    get:
+      summary: Exporta dades per backup/migració
+      parameters:
+        - in: query
+          name: scope
+          schema: { type: string, enum: [alumnes, entrevistes, tot] }
+        - in: query
+          name: anyCurs
+          schema: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  scope: { type: string }
+                  anyCurs: { type: string }
+                  payload: { type: array, items: { type: object } }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+components:
+  responses:
+    BadRequest:
+      description: Dades requerides incompletes
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error: { type: string, example: 'Dades requerides incompletes' }
+    Forbidden:
+      description: Permís denegat
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error: { type: string, example: 'Permís denegat' }
+    NotFound:
+      description: No trobat
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error: { type: string, example: 'No trobat' }
+    CreatedWithId:
+      description: Created
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              id: { type: string, example: 'ulid_123' }
+              status: { type: string, example: 'created' }
+    UpdatedWithId:
+      description: Updated
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              id: { type: string }
+              status: { type: string, example: 'updated' }
+  schemas:
+    AlumneListItem:
+      type: object
+      properties:
+        id: { type: string }
+        nom: { type: string }
+        grup: { type: string }
+        estat: { type: string }
+    AlumneCreate:
+      type: object
+      required: [nom, grup, anyCurs, personalId]
+      properties:
+        nom: { type: string }
+        grup: { type: string }
+        anyCurs: { type: string }
+        personalId: { type: string }
+    AlumneUpdate:
+      type: object
+      properties:
+        grup: { type: string }
+        estat: { type: string, enum: [alta, baixa, migrat] }
+    DadesPersonals:
+      type: object
+      properties:
+        sexe: { type: string }
+        dataNaixement: { type: string, format: date }
+    Tutor:
+      type: object
+      properties:
+        nom: { type: string }
+        telefon: { type: string }
+        email: { type: string }
+    AlumneFull:
+      type: object
+      properties:
+        id: { type: string }
+        nom: { type: string }
+        grup: { type: string }
+        anyCurs: { type: string }
+        estat: { type: string }
+        dadesPersonals: { $ref: '#/components/schemas/DadesPersonals' }
+        dadesFamiliars:
+          type: object
+          properties:
+            tutors:
+              type: array
+              items: { $ref: '#/components/schemas/Tutor' }
+    EntrevistaListItem:
+      type: object
+      properties:
+        id: { type: string }
+        data: { type: string, format: date }
+        acords: { type: string }
+        anyCurs: { type: string }
+    EntrevistaFull:
+      type: object
+      properties:
+        id: { type: string }
+        alumneId: { type: string }
+        anyCurs: { type: string }
+        data: { type: string, format: date }
+        acords: { type: string }
+        usuariCreadorId: { type: string }
+    EntrevistaCreate:
+      type: object
+      required: [alumneId, data, acords]
+      properties:
+        alumneId: { type: string }
+        data: { type: string, format: date }
+        acords: { type: string }
+    EntrevistaUpdate:
+      type: object
+      properties:
+        acords: { type: string }
+    CursCreate:
+      type: object
+      required: [anyCurs, grups]
+      properties:
+        anyCurs: { type: string }
+        grups:
+          type: array
+          items:
+            type: object
+            required: [curs, nom]
+            properties:
+              curs: { type: string }
+              nom: { type: string }
+    ImportacioRequest:
+      type: object
+      required: [anyCurs, alumnes]
+      properties:
+        anyCurs: { type: string }
+        alumnes:
+          type: array
+          items:
+            type: object
+            properties:
+              nom: { type: string }
+              grup: { type: string }
+              personalId: { type: string }
+
