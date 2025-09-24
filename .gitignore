@@ -89,3 +89,23 @@ jspm_packages/
 # Google OAuth secrets
 client_secret_*.json
 **/client_secret_*.json
+
+# Production environment files with secrets
+config-prod.env
+*.prod.env
+.env.prod
+.env.production
+
+# SMTP and email credentials
+*email*
+*smtp*
+*mail*
+
+# Database credentials
+*db*
+*database*
+
+# API keys and secrets
+*secret*
+*key*
+*credential*
