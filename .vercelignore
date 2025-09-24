@@ -1,13 +1,14 @@
-# Excluir directorio del servicio (no necesario para Vercel)
+# Excluir directorio del servicio completamente
 service/
 service/**
-!service/package.json
+service/**/*
 
 # Excluir archivos de desarrollo
 node_modules/
 .env
 .env.local
 .env.production
+.env.prod
 
 # Excluir archivos de Docker
 docker-compose*.yml
@@ -34,3 +35,11 @@ client_secret_*.json
 db/
 sheets/
 i18n/
+
+# Excluir archivos de configuración de desarrollo
+config-*.md
+test-*.js
+verificar-*.js
+
+# Excluir archivos de API que no se usan en Vercel
+api/openapi.yaml

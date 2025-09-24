@@ -23,5 +23,14 @@
     "DISABLE_AUTH": "0",
     "ALLOWED_DOMAIN": "insbitacola.cat"
   },
-  "ignoreCommand": "git diff --quiet HEAD^ HEAD ./client"
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD ./client",
+  "builds": [
+    {
+      "src": "client/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist"
+      }
+    }
+  ]
 }
