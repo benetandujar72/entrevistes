@@ -1,0 +1,18 @@
+Name,Value,Environment,Description
+NODE_ENV,production,Production,Entorno de ejecución
+DISABLE_AUTH,0,Production,Habilitar autenticación Google OAuth
+ALLOWED_DOMAIN,insbitacola.cat,Production,Dominio permitido para autenticación
+GOOGLE_CLIENT_ID,582773400896-0io28jocfebl0aec7u5bnr6up367chs6.apps.googleusercontent.com,Production,ID del cliente Google OAuth
+GOOGLE_CLIENT_SECRET,TU_GOOGLE_CLIENT_SECRET_AQUI,Production,Secreto del cliente Google OAuth
+GOOGLE_CLIENT_EMAIL,entrevistes@insbitacola.iam.gserviceaccount.com,Production,Email del service account de Google
+GOOGLE_PRIVATE_KEY,"-----BEGIN PRIVATE KEY-----\nTU_PRIVATE_KEY_AQUI\n-----END PRIVATE KEY-----\n",Production,Clave privada del service account de Google
+SHEETS_SPREADSHEET_ID,TU_SPREADSHEET_ID_AQUI,Production,ID de la hoja de cálculo de Google Sheets
+DATABASE_URL,postgresql://usuario:password@host:5432/entrevistes,Production,URL de conexión a la base de datos PostgreSQL
+SMTP_HOST,smtp.gmail.com,Production,Servidor SMTP para envío de emails
+SMTP_PORT,587,Production,Puerto del servidor SMTP
+SMTP_USER,entrevistes@insbitacola.cat,Production,Usuario SMTP para envío de emails
+SMTP_PASSWORD,TU_SMTP_PASSWORD_AQUI,Production,Contraseña SMTP para envío de emails
+SMTP_FROM,Entrevistes App <noreply@insbitacola.cat>,Production,Email de remitente para notificaciones
+JWT_SECRET,TU_JWT_SECRET_SEGURO_AQUI,Production,Secreto para firmar tokens JWT
+SESSION_SECRET,TU_SESSION_SECRET_SEGURO_AQUI,Production,Secreto para sesiones de usuario
+ANY_ACTUAL,2025-2026,Production,Año académico actual

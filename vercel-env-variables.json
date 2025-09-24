@@ -1,0 +1,104 @@
+{
+  "variables": [
+    {
+      "name": "NODE_ENV",
+      "value": "production",
+      "description": "Entorno de ejecución"
+    },
+    {
+      "name": "DISABLE_AUTH",
+      "value": "0",
+      "description": "Habilitar autenticación Google OAuth"
+    },
+    {
+      "name": "ALLOWED_DOMAIN",
+      "value": "insbitacola.cat",
+      "description": "Dominio permitido para autenticación"
+    },
+    {
+      "name": "GOOGLE_CLIENT_ID",
+      "value": "582773400896-0io28jocfebl0aec7u5bnr6up367chs6.apps.googleusercontent.com",
+      "description": "ID del cliente Google OAuth"
+    },
+    {
+      "name": "GOOGLE_CLIENT_SECRET",
+      "value": "TU_GOOGLE_CLIENT_SECRET_AQUI",
+      "description": "Secreto del cliente Google OAuth"
+    },
+    {
+      "name": "GOOGLE_CLIENT_EMAIL",
+      "value": "entrevistes@insbitacola.iam.gserviceaccount.com",
+      "description": "Email del service account de Google"
+    },
+    {
+      "name": "GOOGLE_PRIVATE_KEY",
+      "value": "-----BEGIN PRIVATE KEY-----\\nTU_PRIVATE_KEY_AQUI\\n-----END PRIVATE KEY-----\\n",
+      "description": "Clave privada del service account de Google"
+    },
+    {
+      "name": "SHEETS_SPREADSHEET_ID",
+      "value": "TU_SPREADSHEET_ID_AQUI",
+      "description": "ID de la hoja de cálculo de Google Sheets"
+    },
+    {
+      "name": "DATABASE_URL",
+      "value": "postgresql://usuario:password@host:5432/entrevistes",
+      "description": "URL de conexión a la base de datos PostgreSQL"
+    },
+    {
+      "name": "SMTP_HOST",
+      "value": "smtp.gmail.com",
+      "description": "Servidor SMTP para envío de emails"
+    },
+    {
+      "name": "SMTP_PORT",
+      "value": "587",
+      "description": "Puerto del servidor SMTP"
+    },
+    {
+      "name": "SMTP_USER",
+      "value": "entrevistes@insbitacola.cat",
+      "description": "Usuario SMTP para envío de emails"
+    },
+    {
+      "name": "SMTP_PASSWORD",
+      "value": "TU_SMTP_PASSWORD_AQUI",
+      "description": "Contraseña SMTP para envío de emails"
+    },
+    {
+      "name": "SMTP_FROM",
+      "value": "Entrevistes App <noreply@insbitacola.cat>",
+      "description": "Email de remitente para notificaciones"
+    },
+    {
+      "name": "JWT_SECRET",
+      "value": "TU_JWT_SECRET_SEGURO_AQUI",
+      "description": "Secreto para firmar tokens JWT"
+    },
+    {
+      "name": "SESSION_SECRET",
+      "value": "TU_SESSION_SECRET_SEGURO_AQUI",
+      "description": "Secreto para sesiones de usuario"
+    },
+    {
+      "name": "ANY_ACTUAL",
+      "value": "2025-2026",
+      "description": "Año académico actual"
+    }
+  ],
+  "instructions": {
+    "title": "Cómo importar estas variables en Vercel",
+    "steps": [
+      "1. Ve a https://vercel.com/dashboard",
+      "2. Selecciona tu proyecto 'entrevistesib'",
+      "3. Ve a Settings → Environment Variables",
+      "4. Para cada variable:",
+      "   - Click en 'Add New'",
+      "   - Copia el 'name' y 'value'",
+      "   - Selecciona 'Production' environment",
+      "   - Click en 'Save'",
+      "5. Reemplaza los valores que dicen 'TU_..._AQUI' con valores reales",
+      "6. Haz redeploy del proyecto"
+    ]
+  }
+}

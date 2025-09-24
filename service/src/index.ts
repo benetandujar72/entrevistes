@@ -1,5 +1,9 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
 import { createApp } from './app.js';
+
+// Cargar variables de entorno
+dotenv.config({ path: '.env.local' });
+dotenv.config();
 
 const app = createApp();
 const port = process.env.PORT ? Number(process.env.PORT) : 8080;
