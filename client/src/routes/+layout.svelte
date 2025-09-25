@@ -252,9 +252,8 @@
 {/if}
 {/if}
 
-<style>
-  /* Importar el sistema de diseño */
-  @import '$lib/design-system.css';
+        <style>
+          /* Sistema de diseño ya importado globalmente */
   
   /* === LAYOUT PRINCIPAL === */
   .app-layout {
