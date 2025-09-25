@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { fetchAlumnesDb, fetchHealth, type Alumne } from '$lib';
+  import Icon from '$lib/components/SimpleIcon.svelte';
 
   let health = '';
   let total = 0;
@@ -22,37 +23,239 @@
   });
 </script>
 
-<section style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
-  <h1 style="margin:0; font-size:22px;">Dashboard</h1>
-  <div style="flex: 1 0 100%; height:1px; background:#f3f4f6; margin-top:8px;"></div>
-</section>
-
-{#if loading}
-  <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:12px;">
-    {#each Array(3) as _}
-      <div style="border:1px solid #eef2ff; background:#ffffff; border-radius:16px; padding:16px; box-shadow:0 6px 20px rgba(0,0,0,0.04);">
-        <div style="height:14px; width:60%; background:#e5e7eb; border-radius:6px; margin-bottom:10px;"></div>
-        <div style="height:10px; width:80%; background:#eceef3; border-radius:6px;"></div>
+<div class="dashboard-page">
+  <!-- Header -->
+  <div class="dashboard-header">
+    <div class="header-content">
+      <div class="header-title">
+        <Icon name="dashboard" size={24} />
+        <h1>Dashboard</h1>
       </div>
-    {/each}
+      <p class="header-subtitle">Resumen del sistema de entrevistas</p>
+    </div>
   </div>
-{:else if error}
-  <div style="padding:14px; border:1px solid #fee2e2; background:#fff1f2; color:#b91c1c; border-radius:12px;">{error}</div>
-{:else}
-  <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:12px;">
-    <article style="border:1px solid #eef2ff; background:#ffffff; border-radius:16px; padding:16px; box-shadow:0 10px 28px rgba(37,99,235,0.06);">
-      <div style="font-size:12px; color:#64748b;">API</div>
-      <div style="font-weight:700; color:#111827; font-size:18px;">{health}</div>
-    </article>
-    <article style="border:1px solid #eef2ff; background:#ffffff; border-radius:16px; padding:16px; box-shadow:0 10px 28px rgba(37,99,235,0.06);">
-      <div style="font-size:12px; color:#64748b;">Alumnes</div>
-      <div style="font-weight:700; color:#111827; font-size:18px;">{total}</div>
-    </article>
-    <article style="border:1px solid #eef2ff; background:#ffffff; border-radius:16px; padding:16px; box-shadow:0 10px 28px rgba(37,99,235,0.06);">
-      <div style="font-size:12px; color:#64748b;">Actius</div>
-      <div style="font-weight:700; color:#111827; font-size:18px;">{actius}</div>
-    </article>
+
+  <!-- Contenido -->
+  <div class="dashboard-content">
+    {#if loading}
+      <div class="stats-grid">
+        {#each Array(3) as _}
+          <div class="stat-card loading">
+            <div class="stat-skeleton">
+              <div class="skeleton-line skeleton-title"></div>
+              <div class="skeleton-line skeleton-value"></div>
+            </div>
+          </div>
+        {/each}
+      </div>
+    {:else if error}
+      <div class="error-card">
+        <div class="error-content">
+          <Icon name="alert-circle" size={20} />
+          <span>{error}</span>
+        </div>
+      </div>
+    {:else}
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-content">
+            <div class="stat-icon api">
+              <Icon name="check-circle" size={20} />
+            </div>
+            <div class="stat-info">
+              <div class="stat-label">API Status</div>
+              <div class="stat-value">{health}</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-content">
+            <div class="stat-icon students">
+              <Icon name="users" size={20} />
+            </div>
+            <div class="stat-info">
+              <div class="stat-label">Total Alumnes</div>
+              <div class="stat-value">{total}</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-content">
+            <div class="stat-icon active">
+              <Icon name="check-circle" size={20} />
+            </div>
+            <div class="stat-info">
+              <div class="stat-label">Alumnes Actius</div>
+              <div class="stat-value">{actius}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    {/if}
   </div>
-{/if}
+</div>
+
+<style>
+  @import '$lib/design-system.css';
+  
+  .dashboard-page {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  
+  .dashboard-header {
+    margin-bottom: 2rem;
+  }
+  
+  .header-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .header-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  
+  .header-title h1 {
+    margin: 0;
+    font-size: var(--text-3xl);
+    font-weight: 700;
+    color: var(--fg);
+  }
+  
+  .header-subtitle {
+    margin: 0;
+    color: var(--fg-secondary);
+    font-size: var(--text-base);
+  }
+  
+  .dashboard-content {
+    margin-bottom: 2rem;
+  }
+  
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+  }
+  
+  .stat-card {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .stat-card:hover {
+    transform: translateY(-2px);
+  }
+  
+  .stat-content {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  
+  .stat-icon {
+    width: 3rem;
+    height: 3rem;
+    border-radius: var(--radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+  }
+  
+  .stat-icon.api {
+    background: linear-gradient(135deg, var(--success-500), var(--success-600));
+  }
+  
+  .stat-icon.students {
+    background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+  }
+  
+  .stat-icon.active {
+    background: linear-gradient(135deg, var(--warning-500), var(--warning-600));
+  }
+  
+  .stat-info {
+    flex: 1;
+  }
+  
+  .stat-label {
+    font-size: var(--text-sm);
+    color: var(--fg-secondary);
+    margin-bottom: 0.25rem;
+    font-weight: 500;
+  }
+  
+  .stat-value {
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    color: var(--fg);
+  }
+  
+  /* Skeleton Loading */
+  .stat-skeleton {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .skeleton-line {
+    background: linear-gradient(90deg, var(--slate-200) 25%, var(--slate-100) 50%, var(--slate-200) 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+    border-radius: var(--radius-sm);
+  }
+  
+  .skeleton-title {
+    height: 0.875rem;
+    width: 60%;
+  }
+  
+  .skeleton-value {
+    height: 1.5rem;
+    width: 40%;
+  }
+  
+  @keyframes loading {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+  
+  /* Error State */
+  .error-card {
+    border-color: var(--error-500);
+    background: var(--error-50);
+  }
+  
+  .error-content {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--error-600);
+    font-weight: 500;
+  }
+  
+  /* Responsive */
+  @media (max-width: 768px) {
+    .stats-grid {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+    
+    .header-title h1 {
+      font-size: var(--text-2xl);
+    }
+  }
+</style>
 
 

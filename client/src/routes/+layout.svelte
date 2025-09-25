@@ -3,95 +3,75 @@
     import { onMount } from 'svelte';
     import { getToken, checkAuthStatus, isAuthDisabled } from '$lib/auth';
     import { page } from '$app/stores';
-    import dashboardIcon from '$lib/assets/dashboard.svg';
-    import studentsIcon from '$lib/assets/students.svg';
-    import notesIcon from '$lib/assets/notes.svg';
-    import tagIcon from '$lib/assets/tag.svg';
-    import settingsIcon from '$lib/assets/settings.svg';
-    import userIcon from '$lib/assets/user.svg';
-    import usersIcon from '$lib/assets/users.svg';
-    import sunIcon from '$lib/assets/sun.svg';
-    import moonIcon from '$lib/assets/moon.svg';
     import { clearToken } from '$lib/auth';
     import { toastSuccess } from '$lib/toast';
+    import Icon from '$lib/components/SimpleIcon.svelte';
 
 	let { children } = $props();
 
 	// Svelte 5: usar $state para reactividad segura
 	let mobileOpen = $state(false);
-    let isAdmin = $state(true); // Siempre admin en desarrollo local
+    let sidebarCollapsed = $state(false);
+    let isAdmin = $state(true);
     let userEmail = $state('');
     const ADMIN_KEY = 'entrevistes.isAdmin';
     let dark = $state(false);
     const THEME_KEY = 'entrevistes.theme';
-    let authed = $state(true); // Siempre autenticado en desarrollo local
+    let authed = $state(false);
+    const SIDEBAR_KEY = 'entrevistes.sidebarCollapsed';
 
     onMount(async () => {
-        // Para desarrollo local, establecer como admin por defecto
-        isAdmin = true;
-        userEmail = 'admin@entrevistes.local'; // Email por defecto para desarrollo
-        try { localStorage.setItem(ADMIN_KEY, '1'); } catch {}
-        
         // Verificar estado de autenticación del servidor
         let authDisabled = false;
         try {
-            authDisabled = await checkAuthStatus();
+            const r = await fetch('http://localhost:8081/api/auth/status');
+            if (r.ok) {
+                const data = await r.json();
+                authDisabled = data.authDisabled;
+            }
         } catch (error) {
             console.log('Error verificando estado de autenticación:', error);
-            // Si hay error, asumir que está deshabilitada para desarrollo
             authDisabled = true;
         }
         
-        // Guard: si no hay token y no estamos en login, redirigir a inicio
         const t = getToken();
-        // Para desarrollo local, siempre establecer como autenticado
-        authed = true;
-        const current = $page.url.pathname;
-        
-        // Si la autenticación está deshabilitada, permitir acceso directo
-        if (authDisabled) {
-            isAdmin = true; // Cuando la autenticación está deshabilitada, establecer como admin
-            userEmail = 'admin@entrevistes.local'; // Email por defecto
-            try { localStorage.setItem(ADMIN_KEY, '1'); } catch {}
-            if (current === '/') {
-                location.href = '/dashboard';
-                return;
-            }
-        } else {
-            // Solo permitir la página raíz de login cuando no hay token
-            if (!t && current !== '/') {
-                location.href = '/';
-                return;
-            }
-            // Si hay token y estamos en "/", enviar a dashboard
-            if (t && current === '/') {
-                location.href = '/dashboard';
-                return;
+        if (authDisabled || t) {
+            authed = true;
+            if (authDisabled) {
+                isAdmin = true;
+                userEmail = 'admin@entrevistes.local';
             }
         }
+        
         // Cargar estado isAdmin persistido
         try {
             const persisted = localStorage.getItem(ADMIN_KEY);
             if (persisted) isAdmin = persisted === '1';
         } catch {}
+        
+        // Cargar estado de sidebar
+        try {
+            sidebarCollapsed = localStorage.getItem(SIDEBAR_KEY) === 'true';
+        } catch {}
+        
         // Tema
         try {
             dark = (localStorage.getItem(THEME_KEY) || 'light') === 'dark';
             document.documentElement.dataset.theme = dark ? 'dark' : 'light';
         } catch {}
+        
         // Obtener rol via /usuaris/me
         if (t) {
             try {
                 const r = await fetch('http://localhost:8081/usuaris/me', { headers: { Authorization: `Bearer ${t}` } });
                 if (r.ok) {
-                    const me = await r.json();
-                    isAdmin = me?.role === 'admin';
-                    userEmail = me?.email || 'admin@entrevistes.local';
-                    try { localStorage.setItem(ADMIN_KEY, isAdmin ? '1' : '0'); } catch {}
+                    const data = await r.json();
+                    isAdmin = data.role === 'admin';
+                    userEmail = data.email;
                 }
             } catch (error) {
                 console.log('Error obteniendo datos del usuario:', error);
-                // En caso de error, mantener valores por defecto
+                isAdmin = true;
                 userEmail = 'admin@entrevistes.local';
             }
         }
@@ -102,6 +82,11 @@
         document.documentElement.dataset.theme = dark ? 'dark' : 'light';
         try { localStorage.setItem(THEME_KEY, dark ? 'dark' : 'light'); } catch {}
         console.log('Tema cambiado a:', dark ? 'oscuro' : 'claro');
+    }
+
+    function toggleSidebar() {
+        sidebarCollapsed = !sidebarCollapsed;
+        try { localStorage.setItem(SIDEBAR_KEY, sidebarCollapsed.toString()); } catch {}
     }
 
     function logout() {
@@ -119,54 +104,140 @@
 </svelte:head>
 
 {#if authed}
-<div style="display:flex; min-height:100dvh; background: var(--bg); color: var(--fg);">
-	<aside style="width:260px; background: var(--aside-bg); color: var(--aside-fg); display:flex; flex-direction:column;">
-		<div style="padding:16px; border-bottom:1px solid rgba(148,163,184,.2);">
-			<div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
-				<img src={favicon} alt="logo" width="22" height="22" />
-				<strong>Entrevistes</strong>
+<div class="app-layout">
+	<!-- Sidebar -->
+	<aside class="sidebar" class:collapsed={sidebarCollapsed}>
+		<!-- Header de la sidebar -->
+		<div class="sidebar-header">
+			<div class="sidebar-brand">
+				<img src={favicon} alt="logo" width="24" height="24" />
+				{#if !sidebarCollapsed}
+					<span class="brand-text">Entrevistes</span>
+				{/if}
 			</div>
-			{#if authed}
-				<div style="font-size:12px; color:#94a3b8; margin-bottom:12px;">{userEmail || 'admin@entrevistes.local'}</div>
-			{/if}
-			<div style="display:flex; gap:8px; align-items:center;">
-				<button onclick={toggleTheme} style="padding:6px 10px; border:1px solid var(--btn-border); background: var(--btn-bg); color: var(--btn-fg); border-radius:8px; display:flex; align-items:center; gap:8px; cursor:pointer;">
-					<img src={dark ? sunIcon : moonIcon} alt="" width="16" height="16" />
-					<span style="font-size:12px;">{dark ? 'Clar' : 'Fosc'}</span>
-				</button>
-				<button onclick={logout} style="padding:6px 10px; border:1px solid var(--btn-border); background: var(--btn-bg); color: var(--btn-fg); border-radius:8px; display:flex; align-items:center; gap:8px; cursor:pointer;">Sortir</button>
-			</div>
+			
+			<!-- Botón de colapsar -->
+			<button 
+				onclick={toggleSidebar} 
+				class="sidebar-toggle"
+				aria-label={sidebarCollapsed ? 'Expandir sidebar' : 'Colapsar sidebar'}
+			>
+				<Icon name={sidebarCollapsed ? 'chevron-right' : 'chevron-left'} size={16} />
+			</button>
 		</div>
-		<nav style="padding:12px; display:grid; gap:8px;">
+		
+		<!-- Información del usuario -->
+		{#if !sidebarCollapsed}
+			<div class="sidebar-user">
+				<div class="user-info">
+					<div class="user-avatar">
+						<Icon name="user" size={16} />
+					</div>
+					<div class="user-details">
+						<div class="user-name">{userEmail || 'admin@entrevistes.local'}</div>
+						<div class="user-role">{isAdmin ? 'Administrador' : 'Docente'}</div>
+					</div>
+				</div>
+			</div>
+		{/if}
+		
+		<!-- Navegación -->
+		<nav class="sidebar-nav">
 			<!-- Sección Principal -->
-			<div style="padding:8px 12px 4px; color:var(--icon-fg); font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">Principal</div>
-			<a href="/dashboard" style="padding:10px 12px; border-radius:8px; color:var(--nav-link-fg); text-decoration:none; display:flex; align-items:center; gap:10px; transition:all 0.2s; background:var(--nav-link-hover-bg);"><img src={dashboardIcon} alt="" width="18" height="18" style="filter: brightness(0) saturate(100%) invert(100%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(100%) contrast(100%);" /> <span>Dashboard</span></a>
+			<div class="nav-section">
+				{#if !sidebarCollapsed}
+					<div class="nav-section-title">Principal</div>
+				{/if}
+				<a href="/dashboard" class="nav-link" class:active={$page.url.pathname === '/dashboard'}>
+					<Icon name="dashboard" size={18} />
+					{#if !sidebarCollapsed}<span>Dashboard</span>{/if}
+				</a>
+			</div>
 			
 			<!-- Gestión Académica -->
-			<div style="padding:16px 12px 4px; color:var(--icon-fg); font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">Gestió Acadèmica</div>
-			<a href="/alumnes" style="padding:10px 12px; border-radius:8px; color:var(--nav-link-fg); text-decoration:none; display:flex; align-items:center; gap:10px; transition:all 0.2s;"><img src={studentsIcon} alt="" width="18" height="18" style="filter: brightness(0) saturate(100%) invert(100%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(100%) contrast(100%);" /> <span>Alumnes</span></a>
-			<a href="/cursos" style="padding:10px 12px; border-radius:8px; color:var(--nav-link-fg); text-decoration:none; display:flex; align-items:center; gap:10px; transition:all 0.2s;"><img src={tagIcon} alt="" width="18" height="18" style="filter: brightness(0) saturate(100%) invert(100%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(100%) contrast(100%);" /> <span>Cursos</span></a>
-			<a href="/entrevistes" style="padding:10px 12px; border-radius:8px; color:var(--nav-link-fg); text-decoration:none; display:flex; align-items:center; gap:10px; transition:all 0.2s;"><img src={notesIcon} alt="" width="18" height="18" style="filter: brightness(0) saturate(100%) invert(100%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(100%) contrast(100%);" /> <span>Entrevistes</span></a>
+			<div class="nav-section">
+				{#if !sidebarCollapsed}
+					<div class="nav-section-title">Gestió Acadèmica</div>
+				{/if}
+				<a href="/alumnes" class="nav-link" class:active={$page.url.pathname.startsWith('/alumnes')}>
+					<Icon name="users" size={18} />
+					{#if !sidebarCollapsed}<span>Alumnes</span>{/if}
+				</a>
+				<a href="/cursos" class="nav-link" class:active={$page.url.pathname.startsWith('/cursos')}>
+					<Icon name="tag" size={18} />
+					{#if !sidebarCollapsed}<span>Cursos</span>{/if}
+				</a>
+				<a href="/entrevistes" class="nav-link" class:active={$page.url.pathname.startsWith('/entrevistes')}>
+					<Icon name="notes" size={18} />
+					{#if !sidebarCollapsed}<span>Entrevistes</span>{/if}
+				</a>
+			</div>
 			
-			<!-- Herramientas Agrupadas -->
-			<div style="padding:16px 12px 4px; color:var(--icon-fg); font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">Eines</div>
-			<a href="/eines" style="padding:10px 12px; border-radius:8px; color:var(--nav-link-fg); text-decoration:none; display:flex; align-items:center; gap:10px; transition:all 0.2s;"><img src={notesIcon} alt="" width="18" height="18" style="filter: brightness(0) saturate(100%) invert(100%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(100%) contrast(100%);" /> <span>Eines</span></a>
+			<!-- Herramientas -->
+			<div class="nav-section">
+				{#if !sidebarCollapsed}
+					<div class="nav-section-title">Eines</div>
+				{/if}
+				<a href="/eines" class="nav-link" class:active={$page.url.pathname.startsWith('/eines')}>
+					<Icon name="settings" size={18} />
+					{#if !sidebarCollapsed}<span>Eines</span>{/if}
+				</a>
+			</div>
 			
-			<!-- Configuración Agrupada -->
-			<div style="padding:16px 12px 4px; color:var(--icon-fg); font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">Configuració</div>
-			<a href="/configuracion" style="padding:10px 12px; border-radius:8px; color:var(--nav-link-fg); text-decoration:none; display:flex; align-items:center; gap:10px; transition:all 0.2s;"><img src={settingsIcon} alt="" width="18" height="18" style="filter: brightness(0) saturate(100%) invert(100%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(100%) contrast(100%);" /> <span>Configuració</span></a>
+			<!-- Configuración -->
+			<div class="nav-section">
+				{#if !sidebarCollapsed}
+					<div class="nav-section-title">Configuració</div>
+				{/if}
+				<a href="/configuracion" class="nav-link" class:active={$page.url.pathname.startsWith('/configuracion')}>
+					<Icon name="settings" size={18} />
+					{#if !sidebarCollapsed}<span>Configuració</span>{/if}
+				</a>
+			</div>
 			
-            {#if isAdmin}
-				<!-- Administración Agrupada -->
-				<div style="padding:16px 12px 4px; color:var(--icon-fg); font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">Administració</div>
-				<a href="/administracio" style="padding:10px 12px; border-radius:8px; color:var(--nav-link-fg); text-decoration:none; display:flex; align-items:center; gap:10px; transition:all 0.2s;"><img src={userIcon} alt="" width="18" height="18" style="filter: brightness(0) saturate(100%) invert(100%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(100%) contrast(100%);" /> <span>Administració</span></a>
+			<!-- Administración -->
+			{#if isAdmin}
+				<div class="nav-section">
+					{#if !sidebarCollapsed}
+						<div class="nav-section-title">Administració</div>
+					{/if}
+					<a href="/administracio" class="nav-link" class:active={$page.url.pathname.startsWith('/administracio')}>
+						<Icon name="user" size={18} />
+						{#if !sidebarCollapsed}<span>Administració</span>{/if}
+					</a>
+				</div>
 			{/if}
 		</nav>
+		
+		<!-- Footer de la sidebar -->
+		<div class="sidebar-footer">
+			<div class="sidebar-actions">
+				<button 
+					onclick={toggleTheme}
+					class="theme-toggle"
+				>
+					<Icon name={dark ? 'sun' : 'moon'} size={16} />
+					{#if !sidebarCollapsed}
+						{dark ? 'Clar' : 'Fosc'}
+					{/if}
+				</button>
+				<button 
+					onclick={logout}
+					class="logout-btn"
+				>
+					<Icon name="log-out" size={16} />
+					{#if !sidebarCollapsed}
+						Sortir
+					{/if}
+				</button>
+			</div>
+		</div>
 	</aside>
-	<main style="flex:1; padding:24px; background: var(--bg); color: var(--fg);">
+	
+	<!-- Contenido principal -->
+	<main class="main-content">
 		{@render children?.()}
 	</main>
-
 </div>
 {:else}
 <!-- No autenticado: solo renderizamos la página de login (ruta '/') sin menú -->
@@ -175,31 +246,254 @@
         {@render children?.()}
     </main>
 {:else}
-    <main style="min-height:100dvh; display:grid; place-items:center; background: var(--bg); color: var(--fg);">
+    <main style="display:flex; align-items:center; justify-content:center; min-height:100dvh; padding:24px; background: var(--bg); color: var(--fg);">
         <div style="padding:16px; border:1px solid #e5e7eb; background:#fff; border-radius:12px;">Redirigint al login…</div>
     </main>
 {/if}
 {/if}
 
 <style>
-:root{
-  --bg:#f8fafc; --fg:#111827;
-  --aside-bg:#0f172a; --aside-fg:#e5e7eb;
-  --btn-bg:transparent; --btn-fg:#e5e7eb; --btn-border:rgba(148,163,184,.3);
-  --icon-fg:#94a3b8;
-  --nav-link-fg:#e5e7eb;
-  --nav-link-hover-bg:rgba(148,163,184,.1);
-}
-[data-theme="dark"]{
-  --bg:#0b1220; --fg:#e5e7eb;
-  --aside-bg:#0b1324; --aside-fg:#e5e7eb;
-  --btn-bg:rgba(148,163,184,.1); --btn-fg:#f1f5f9; --btn-border:rgba(148,163,184,.4);
-  --icon-fg:#cbd5e1;
-  --nav-link-fg:#f1f5f9;
-  --nav-link-hover-bg:rgba(148,163,184,.15);
-}
-@media (min-width: 768px) {
-	.desktop { display:flex !important }
-	.mobilebtn { display:none }
-}
+  /* Importar el sistema de diseño */
+  @import '$lib/design-system.css';
+  
+  /* === LAYOUT PRINCIPAL === */
+  .app-layout {
+    display: flex;
+    min-height: 100dvh;
+    background: var(--bg);
+    color: var(--fg);
+  }
+  
+  /* === SIDEBAR === */
+  .sidebar {
+    width: 280px;
+    background: var(--sidebar-bg);
+    border-right: 1px solid var(--sidebar-border);
+    display: flex;
+    flex-direction: column;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    z-index: 10;
+  }
+  
+  .sidebar.collapsed {
+    width: 64px;
+  }
+  
+  .sidebar-header {
+    padding: 1rem;
+    border-bottom: 1px solid var(--sidebar-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+  
+  .sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-weight: 600;
+    color: var(--fg);
+  }
+  
+  .brand-text {
+    font-size: var(--text-lg);
+    transition: opacity 0.3s ease;
+  }
+  
+  .sidebar.collapsed .brand-text {
+    opacity: 0;
+    width: 0;
+    overflow: hidden;
+  }
+  
+  .sidebar-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border: none;
+    background: var(--btn-ghost-hover);
+    color: var(--fg);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .sidebar-toggle:hover {
+    background: var(--btn-secondary-hover);
+    transform: scale(1.05);
+  }
+  
+  /* === USUARIO === */
+  .sidebar-user {
+    padding: 1rem;
+    border-bottom: 1px solid var(--sidebar-border);
+  }
+  
+  .user-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  
+  .user-avatar {
+    width: 2.5rem;
+    height: 2.5rem;
+    background: var(--primary-100);
+    color: var(--primary-600);
+    border-radius: var(--radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+  }
+  
+  .user-details {
+    flex: 1;
+    min-width: 0;
+  }
+  
+  .user-name {
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--fg);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .user-role {
+    font-size: var(--text-xs);
+    color: var(--fg-secondary);
+    margin-top: 0.125rem;
+  }
+  
+  /* === NAVEGACIÓN === */
+  .sidebar-nav {
+    flex: 1;
+    padding: 1rem 0;
+    overflow-y: auto;
+  }
+  
+  .nav-section {
+    margin-bottom: 1.5rem;
+  }
+  
+  .nav-section-title {
+    padding: 0.5rem 1rem 0.25rem;
+    font-size: var(--text-xs);
+    font-weight: 600;
+    color: var(--fg-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  
+  .nav-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    margin: 0.125rem 0.5rem;
+    color: var(--fg);
+    text-decoration: none;
+    border-radius: var(--radius-md);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    font-weight: 500;
+  }
+  
+  .nav-link:hover {
+    background: var(--sidebar-item-hover);
+    color: var(--primary-600);
+    transform: translateX(2px);
+  }
+  
+  .nav-link.active {
+    background: var(--sidebar-item-active);
+    color: var(--sidebar-item-active-fg);
+    font-weight: 600;
+  }
+  
+  .nav-link.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 1.5rem;
+    background: var(--primary-600);
+    border-radius: 0 2px 2px 0;
+  }
+  
+  .sidebar.collapsed .nav-link span {
+    opacity: 0;
+    width: 0;
+    overflow: hidden;
+  }
+  
+  /* === FOOTER === */
+  .sidebar-footer {
+    padding: 1rem;
+    border-top: 1px solid var(--sidebar-border);
+  }
+  
+  .sidebar-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .theme-toggle,
+  .logout-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border: none;
+    background: var(--btn-ghost-hover);
+    color: var(--fg);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: var(--text-sm);
+  }
+  
+  .theme-toggle:hover,
+  .logout-btn:hover {
+    background: var(--btn-secondary-hover);
+    transform: translateX(2px);
+  }
+  
+  /* === CONTENIDO PRINCIPAL === */
+  .main-content {
+    flex: 1;
+    padding: 2rem;
+    background: var(--bg);
+    color: var(--fg);
+    overflow-y: auto;
+  }
+  
+  /* === RESPONSIVE === */
+  @media (max-width: 768px) {
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100vh;
+      z-index: 50;
+      transform: translateX(-100%);
+    }
+    
+    .sidebar:not(.collapsed) {
+      transform: translateX(0);
+    }
+    
+    .main-content {
+      padding: 1rem;
+    }
+  }
 </style>

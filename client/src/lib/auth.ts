@@ -19,7 +19,12 @@ export function clearToken() {
 }
 
 export function isAuthenticated(): boolean {
-  return !!getToken() || isAuthDisabled();
+  const token = getToken();
+  // Validación directa para benet.andujar@insbitacola.cat
+  if (token === 'benet.andujar@insbitacola.cat') {
+    return true;
+  }
+  return !!token || isAuthDisabled();
 }
 
 export function isAuthDisabled(): boolean {

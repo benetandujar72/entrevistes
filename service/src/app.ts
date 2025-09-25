@@ -50,7 +50,7 @@ export function createApp() {
   // Endpoint para verificar estado de autenticación
   app.get('/api/auth/status', (_req, res) => {
     res.json({ 
-      disabled: process.env.DISABLE_AUTH === '1',
+      authDisabled: process.env.DISABLE_AUTH === '1',
       message: process.env.DISABLE_AUTH === '1' ? 'Autenticación deshabilitada' : 'Autenticación habilitada'
     });
   });
