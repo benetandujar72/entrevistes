@@ -13,6 +13,9 @@
     type ConfiguracionHorariosTutor
   } from '$lib';
   import { toastError, toastSuccess } from '$lib/toast';
+  import Button from '$lib/components/Button.svelte';
+  import TextField from '$lib/components/TextField.svelte';
+  import Icon from '$lib/components/SimpleIcon.svelte';
 
   let me: Me | null = null;
   let tutorSeleccionat: string = '';
@@ -207,7 +210,7 @@
 </script>
 
 <div class="container">
-  <h1>📅 Programador de Cites</h1>
+  <h1>Programador de Cites</h1>
   
   {#if error}
     <div class="error">
@@ -217,25 +220,15 @@
 
   <!-- Configuración de horarios -->
   <div class="config-section">
-    <h2>⚙️ Configuració d'Horaris</h2>
+    <h2>Configuració d'Horaris</h2>
     
     <div class="config-form">
       <div class="form-row">
         <div class="form-group">
-          <label for="fecha_inicio">Data d'inici:</label>
-          <input 
-            id="fecha_inicio" 
-            type="date" 
-            bind:value={configuracionHorarios.fecha_inicio}
-          />
+          <TextField label="Data d'inici" type="date" bind:value={configuracionHorarios.fecha_inicio} />
         </div>
         <div class="form-group">
-          <label for="fecha_fin">Data de fi:</label>
-          <input 
-            id="fecha_fin" 
-            type="date" 
-            bind:value={configuracionHorarios.fecha_fin}
-          />
+          <TextField label="Data de fi" type="date" bind:value={configuracionHorarios.fecha_fin} />
         </div>
       </div>
 
@@ -262,15 +255,13 @@
         </div>
       </div>
 
-      <button class="btn btn-primary" onclick={configurarHorarios}>
-        💾 Guardar Configuració
-      </button>
+      <button class="btn btn-primary" onclick={configurarHorarios}>Guardar Configuració</button>
     </div>
   </div>
 
   <!-- Vista de horarios -->
   <div class="horarios-section">
-    <h2>📋 Horaris del Tutor</h2>
+    <h2>Horaris del Tutor</h2>
     
     <div class="filtros">
       <div class="form-group">
@@ -291,11 +282,7 @@
 
       <div class="form-group">
         <label for="fecha">Data:</label>
-        <input 
-          id="fecha" 
-          type="date" 
-          bind:value={fechaSeleccionada}
-        />
+        <input id="fecha" type="date" bind:value={fechaSeleccionada} />
       </div>
     </div>
 
@@ -310,7 +297,7 @@
         
         {#if horarios.horarios_disponibles.length === 0}
           <div class="empty-state">
-            <div class="empty-icon">📅</div>
+            <div class="empty-icon">—</div>
             <h3>No hi ha horaris disponibles</h3>
             <p>No s'han configurat horaris per aquesta data.</p>
           </div>
@@ -322,12 +309,7 @@
                   <span class="hora">{horario.hora}</span>
                   <span class="estat disponible">Disponible</span>
                 </div>
-                <button 
-                  class="btn btn-success btn-sm" 
-                  onclick={() => abrirReservaForm(horario)}
-                >
-                  📅 Reservar
-                </button>
+                <button class="btn btn-success btn-sm" onclick={() => abrirReservaForm(horario)}>Reservar</button>
               </div>
             {/each}
           </div>
@@ -357,7 +339,7 @@
     <div class="modal-overlay" role="dialog" aria-modal="true" tabindex="-1" onclick={() => showReservaForm = false} onkeydown={(e) => e.key === 'Escape' && (showReservaForm = false)}>
       <div class="modal-content" role="document">
         <div class="modal-header">
-          <h3>📅 Nova Reserva</h3>
+          <h3>Nova Reserva</h3>
           <button class="close-btn" onclick={() => showReservaForm = false}>×</button>
         </div>
         
@@ -416,16 +398,8 @@
         </div>
         
         <div class="modal-footer">
-          <button class="btn btn-secondary" onclick={() => showReservaForm = false}>
-            Cancel·lar
-          </button>
-          <button 
-            class="btn btn-primary" 
-            onclick={crearReserva}
-            disabled={loadingReserva}
-          >
-            {loadingReserva ? 'Creant...' : 'Crear Reserva'}
-          </button>
+          <button class="btn btn-secondary" onclick={() => showReservaForm = false}>Cancel·lar</button>
+          <button class="btn btn-primary" onclick={crearReserva} disabled={loadingReserva}>{loadingReserva ? 'Creant…' : 'Crear Reserva'}</button>
         </div>
       </div>
     </div>

@@ -10,6 +10,7 @@
     type ConsolidacionLog,
     type EntrevistaConsolidada
   } from '$lib/index.js';
+  import Icon from '$lib/components/SimpleIcon.svelte';
 
   let cursos: CursDisponible[] = [];
   let cursSeleccionat = '';
@@ -92,27 +93,32 @@
   }
 </script>
 
-<div class="p-6 max-w-6xl mx-auto">
-  <div class="mb-8">
-    <h1 class="text-3xl font-bold text-gray-900 mb-2">Consolidació d'Entrevistes</h1>
-    <p class="text-gray-600">
+<div class="page-container">
+  <div class="page-header">
+    <h1 class="page-title">
+      <Icon name="download" size={28} />
+      Consolidació d'Entrevistes
+    </h1>
+    <p class="page-description">
       Consolida automàticament les entrevistes d'un curs basant-se en l'historial de pestanyes anteriors.
     </p>
   </div>
 
   <!-- Selecció de Curs i Consolidació -->
-  <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-    <h2 class="text-xl font-semibold mb-4">Consolidar Curs</h2>
+  <div class="card">
+    <div class="card-header">
+      <Icon name="settings" size={20} />
+      <h2>Consolidar Curs</h2>
+    </div>
     
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-      <div>
-        <label for="curs" class="block text-sm font-medium text-gray-700 mb-2">
-          Seleccionar Curs
-        </label>
+    <div class="form-grid">
+      <div class="form-group">
+        <label for="curs">Seleccionar Curs</label>
         <select 
           id="curs"
+          name="curs"
           bind:value={cursSeleccionat}
-          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          class="select"
         >
           <option value="">Selecciona un curs...</option>
           {#each cursos as curs}
@@ -121,35 +127,42 @@
         </select>
       </div>
       
-      <div class="flex items-end">
+      <div class="form-group">
         <button
-          on:click={consolidar}
+          onclick={consolidar}
           disabled={!cursSeleccionat || consolidant}
-          class="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+          class="btn btn-filled-primary btn-full"
         >
+          {#if consolidant}
+            <span class="btn-spinner"></span>
+          {:else}
+            <Icon name="download" size={16} />
+          {/if}
           {consolidant ? 'Consolidant...' : 'Consolidar Curs'}
         </button>
       </div>
     </div>
 
     {#if resultat}
-      <div class="mt-4 p-4 rounded-md {resultat.exit ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}">
-        <h3 class="font-semibold {resultat.exit ? 'text-green-800' : 'text-red-800'}">
-          {resultat.exit ? 'Consolidació Exitosa' : 'Error en Consolidació'}
-        </h3>
-        <p class="mt-2 {resultat.exit ? 'text-green-700' : 'text-red-700'}">
-          {resultat.detalls}
-        </p>
+      <div class="result-card {resultat.exit ? 'result-success' : 'result-error'}">
+        <div class="result-header">
+          <Icon name={resultat.exit ? 'check-circle' : 'alert-circle'} size={20} />
+          <h3>{resultat.exit ? 'Consolidació Exitosa' : 'Error en Consolidació'}</h3>
+        </div>
+        <p class="result-message">{resultat.detalls}</p>
         {#if resultat.exit}
-          <div class="mt-3 grid grid-cols-3 gap-4 text-sm">
-            <div>
-              <span class="font-medium">Alumnes:</span> {resultat.alumnesProcessats}
+          <div class="result-stats">
+            <div class="stat">
+              <span class="stat-label">Alumnes:</span>
+              <span class="stat-value">{resultat.alumnesProcessats}</span>
             </div>
-            <div>
-              <span class="font-medium">Entrevistes:</span> {resultat.entrevistesImportades}
+            <div class="stat">
+              <span class="stat-label">Entrevistes:</span>
+              <span class="stat-value">{resultat.entrevistesImportades}</span>
             </div>
-            <div>
-              <span class="font-medium">Errors:</span> {resultat.errors}
+            <div class="stat">
+              <span class="stat-label">Errors:</span>
+              <span class="stat-value">{resultat.errors}</span>
             </div>
           </div>
         {/if}
@@ -158,19 +171,21 @@
   </div>
 
   <!-- Botons d'Acció -->
-  <div class="flex gap-4 mb-6">
+  <div class="action-buttons">
     <button
-      on:click={() => { mostrarLogs = !mostrarLogs; mostrarEntrevistes = false; }}
-      class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
+      onclick={() => { mostrarLogs = !mostrarLogs; mostrarEntrevistes = false; }}
+      class="btn btn-tonal-primary"
     >
+      <Icon name="notes" size={16} />
       {mostrarLogs ? 'Ocultar' : 'Veure'} Logs de Consolidació
     </button>
     
     {#if cursSeleccionat}
       <button
-        on:click={() => { carregarEntrevistes(); mostrarLogs = false; }}
-        class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700"
+        onclick={() => { carregarEntrevistes(); mostrarLogs = false; }}
+        class="btn btn-filled-primary"
       >
+        <Icon name="users" size={16} />
         Veure Entrevistes Consolidadas
       </button>
     {/if}
@@ -268,3 +283,185 @@
     </div>
   {/if}
 </div>
+
+<style>
+  /* === PAGE CONTAINER === */
+  .page-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+  }
+
+  /* === PAGE HEADER === */
+  .page-header {
+    margin-bottom: 2rem;
+  }
+
+  .page-title {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    font-size: var(--text-3xl);
+    font-weight: 600;
+    color: var(--fg);
+    margin: 0 0 0.5rem 0;
+  }
+
+  .page-description {
+    font-size: var(--text-lg);
+    color: var(--fg-secondary);
+    margin: 0;
+  }
+
+  /* === CARDS === */
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    box-shadow: var(--card-shadow);
+    margin-bottom: 1.5rem;
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    font-size: var(--text-xl);
+    font-weight: 600;
+    color: var(--fg);
+  }
+
+  /* === FORM GRID === */
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 1rem;
+    align-items: end;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .form-group label {
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--fg-secondary);
+  }
+
+  /* === SELECT === */
+  .select {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--input-border);
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+    background: var(--input-bg);
+    color: var(--fg);
+    transition: all 0.2s ease;
+    min-width: 200px;
+  }
+
+  .select:focus {
+    outline: none;
+    border-color: var(--input-border-focus);
+    box-shadow: 0 0 0 3px var(--input-ring);
+  }
+
+  /* === BUTTON FULL === */
+  .btn-full {
+    width: 100%;
+  }
+
+  /* === RESULT CARD === */
+  .result-card {
+    margin-top: 1rem;
+    padding: 1rem;
+    border-radius: var(--radius-md);
+    border: 1px solid;
+  }
+
+  .result-success {
+    background: var(--success-50);
+    border-color: var(--success-500);
+    color: var(--success-600);
+  }
+
+  .result-error {
+    background: var(--error-50);
+    border-color: var(--error-500);
+    color: var(--error-600);
+  }
+
+  .result-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .result-header h3 {
+    font-weight: 600;
+    font-size: var(--text-lg);
+    margin: 0;
+  }
+
+  .result-message {
+    margin: 0 0 1rem 0;
+    font-size: var(--text-sm);
+  }
+
+  .result-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+  }
+
+  .stat {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .stat-label {
+    font-size: var(--text-xs);
+    font-weight: 500;
+    opacity: 0.8;
+  }
+
+  .stat-value {
+    font-size: var(--text-lg);
+    font-weight: 600;
+  }
+
+  /* === ACTION BUTTONS === */
+  .action-buttons {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  /* === RESPONSIVE === */
+  @media (max-width: 768px) {
+    .page-container {
+      padding: 1rem;
+    }
+
+    .form-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .result-stats {
+      grid-template-columns: 1fr;
+    }
+
+    .action-buttons {
+      flex-direction: column;
+    }
+  }
+</style>

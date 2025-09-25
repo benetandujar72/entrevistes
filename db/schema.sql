@@ -52,6 +52,8 @@ CREATE TABLE IF NOT EXISTS pf (
     tis TEXT, -- TIS
     ralc TEXT, -- RALC
     link_fotografia TEXT,
+    tutor_personal_nom TEXT, -- Nombre del tutor personal (profesor asignado)
+    tutor_personal_email TEXT, -- Email del tutor personal
     tutor1_nom TEXT,
     tutor1_tel TEXT,
     tutor1_email TEXT,

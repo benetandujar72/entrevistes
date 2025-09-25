@@ -45,6 +45,108 @@ const SolicitutCanviSchema = z.object({
   justificacio: z.string().min(10)
 });
 
+// POST /dades-personals/import - Importar datos personales
+router.post('/import', requireAuth(), requireRole(['admin']), async (req: Request, res: Response) => {
+  try {
+    const {
+      personal_id,
+      alumne_nom,
+      alumne_email,
+      sexe,
+      data_naixement,
+      municipi_naixement,
+      nacionalitat,
+      adreca,
+      municipi_residencia,
+      codi_postal,
+      doc_identitat,
+      tis,
+      ralc,
+      link_fotografia,
+      tutor_personal_nom,
+      tutor_personal_email,
+      tutor1_nom,
+      tutor1_tel,
+      tutor1_email,
+      tutor2_nom,
+      tutor2_tel,
+      tutor2_email
+    } = req.body;
+
+    // Validar datos requeridos
+    if (!personal_id || !alumne_nom || !alumne_email) {
+      return res.status(400).json({ error: 'Datos requeridos: personal_id, alumne_nom, alumne_email' });
+    }
+
+    // Buscar alumno por nombre (más confiable que email)
+    const alumneResult = await query(
+      'SELECT alumne_id, email FROM alumnes WHERE nom = $1',
+      [alumne_nom]
+    );
+
+    if (alumneResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Alumno no encontrado en la base de datos' });
+    }
+
+    const alumneId = alumneResult.rows[0].alumne_id;
+
+    // Insertar o actualizar datos personales
+    await query(`
+      INSERT INTO pf (
+        personal_id, sexe, data_naixement, municipi_naixement, nacionalitat,
+        adreca, municipi_residencia, codi_postal, doc_identitat, tis, ralc,
+        link_fotografia, tutor_personal_nom, tutor_personal_email, tutor1_nom, 
+        tutor1_tel, tutor1_email, tutor2_nom, tutor2_tel, tutor2_email
+      ) VALUES (
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
+      )
+      ON CONFLICT (personal_id) DO UPDATE SET
+        sexe = EXCLUDED.sexe,
+        data_naixement = EXCLUDED.data_naixement,
+        municipi_naixement = EXCLUDED.municipi_naixement,
+        nacionalitat = EXCLUDED.nacionalitat,
+        adreca = EXCLUDED.adreca,
+        municipi_residencia = EXCLUDED.municipi_residencia,
+        codi_postal = EXCLUDED.codi_postal,
+        doc_identitat = EXCLUDED.doc_identitat,
+        tis = EXCLUDED.tis,
+        ralc = EXCLUDED.ralc,
+        link_fotografia = EXCLUDED.link_fotografia,
+        tutor_personal_nom = EXCLUDED.tutor_personal_nom,
+        tutor_personal_email = EXCLUDED.tutor_personal_email,
+        tutor1_nom = EXCLUDED.tutor1_nom,
+        tutor1_tel = EXCLUDED.tutor1_tel,
+        tutor1_email = EXCLUDED.tutor1_email,
+        tutor2_nom = EXCLUDED.tutor2_nom,
+        tutor2_tel = EXCLUDED.tutor2_tel,
+        tutor2_email = EXCLUDED.tutor2_email,
+        updated_at = NOW()
+    `, [
+      personal_id, sexe, data_naixement, municipi_naixement, nacionalitat,
+      adreca, municipi_residencia, codi_postal, doc_identitat, tis, ralc,
+      link_fotografia, tutor_personal_nom, tutor_personal_email, tutor1_nom, 
+      tutor1_tel, tutor1_email, tutor2_nom, tutor2_tel, tutor2_email
+    ]);
+
+    // Actualizar referencia en tabla alumnes y email si es diferente
+    await query(
+      'UPDATE alumnes SET personal_id = $1, email = $2 WHERE alumne_id = $3',
+      [personal_id, alumne_email, alumneId]
+    );
+
+    res.json({ 
+      success: true, 
+      message: 'Datos personales importados correctamente',
+      alumne_id: alumneId,
+      personal_id: personal_id
+    });
+
+  } catch (error: any) {
+    console.error('Error importando datos personales:', error);
+    res.status(500).json({ error: 'Error importando datos personales' });
+  }
+});
+
 // GET /dades-personals/:alumneId - Obtener datos personales de un alumno
 router.get('/:alumneId', requireAuth(), async (req: Request, res: Response) => {
   try {

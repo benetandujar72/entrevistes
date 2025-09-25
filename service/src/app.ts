@@ -32,7 +32,7 @@ export function createApp() {
     })
   );
   app.options('*', cors());
-  app.use(express.json());
+  app.use(express.json({ limit: '10mb' }));
   app.use('/alumnes', alumnes);
   app.use('/alumnes-db', alumnesDb);
   app.use('/entrevistes', entrevistes);

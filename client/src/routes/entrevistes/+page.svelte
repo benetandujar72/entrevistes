@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { fetchEntrevistes, fetchTodasLasEntrevistasAdmin, type Entrevista, type EntrevistaAdmin, loadConfigSpreadsheets, setSelectedCourse, getSelectedCourse, formatearFechaMadridSoloFecha, deleteEntrevista } from '$lib';
   import { getToken } from '$lib/auth';
+  import Icon from '$lib/components/SimpleIcon.svelte';
   
   let entrevistes: (Entrevista | EntrevistaAdmin)[] = [];
   let q = '';
@@ -88,21 +89,30 @@
   });
 </script>
 
-<section style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
-  <div>
-    <h1 style="margin:0; font-size:22px;">Entrevistes</h1>
+<div class="page-header">
+  <div class="header-content">
+    <h1 class="page-title">
+      <Icon name="notes" size={24} />
+      Entrevistes
+    </h1>
     {#if isAdmin}
-      <div style="font-size:12px; color:#059669; margin-top:4px;">
-        <span style="background:#ecfdf5; border:1px solid #d1fae5; padding:2px 8px; border-radius:999px;">
-          👑 Vista Administrador - {totalEntrevistas} entrevistas total
-        </span>
+      <div class="admin-badge">
+        <Icon name="user" size={14} />
+        <span>Vista Administrador - {totalEntrevistas} entrevistas total</span>
       </div>
     {/if}
   </div>
-  <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
-    <div>
-      <label style="font-size:12px; color:#6b7280;">Curs</label>
-      <select bind:value={selected} onchange={() => { setSelectedCourse(selected as any); reload(); }} style="display:block; padding:10px 12px; border:1px solid #e5e7eb; border-radius:10px; min-width:140px;">
+  
+  <div class="filters">
+    <div class="filter-group">
+      <label for="curs-select">Curs</label>
+      <select 
+        id="curs-select"
+        name="curs"
+        bind:value={selected} 
+        onchange={() => { setSelectedCourse(selected as any); reload(); }} 
+        class="select"
+      >
         <option value="">(tots els cursos)</option>
         <option value="1r">1r ESO</option>
         <option value="2n">2n ESO</option>
@@ -110,107 +120,140 @@
         <option value="4t">4t ESO</option>
       </select>
     </div>
-    <div>
-      <label style="font-size:12px; color:#6b7280;">Filtrar</label>
-      <input placeholder="Cercar per acords, alumne..." bind:value={q} style="display:block; padding:10px 12px; border:1px solid #e5e7eb; border-radius:10px; min-width:220px;" />
+    
+    <div class="filter-group">
+      <label for="search-input">Filtrar</label>
+      <div class="search-input">
+        <input 
+          id="search-input"
+          name="search"
+          placeholder="Cercar per acords, alumne..." 
+          bind:value={q} 
+          class="input"
+        />
+        <Icon name="search" size={16} class="search-icon" />
+      </div>
     </div>
   </div>
-  <div style="flex: 1 0 100%; height:1px; background:#f3f4f6; margin-top:8px;"></div>
-</section>
+</div>
 
 {#if loading}
   <!-- Skeleton grid -->
-  <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap:12px;">
+  <div class="skeleton-grid">
     {#each Array(6) as _}
-      <div style="border:1px solid #eef2ff; background:#ffffff; border-radius:16px; padding:16px; box-shadow:0 6px 20px rgba(0,0,0,0.04);">
-        <div style="height:14px; width:60%; background:#e5e7eb; border-radius:6px; margin-bottom:10px;"></div>
-        <div style="height:10px; width:80%; background:#eceef3; border-radius:6px; margin-bottom:6px;"></div>
-        <div style="height:10px; width:50%; background:#eceef3; border-radius:6px;"></div>
+      <div class="skeleton-card">
+        <div class="skeleton-line skeleton-title"></div>
+        <div class="skeleton-line skeleton-content"></div>
+        <div class="skeleton-line skeleton-content-short"></div>
       </div>
     {/each}
   </div>
 {:else if error}
-  <div style="padding:14px; border:1px solid #fee2e2; background:#fff1f2; color:#b91c1c; border-radius:12px;">{error}</div>
+  <div class="error-card">
+    <Icon name="alert-circle" size={18} />
+    <span>{error}</span>
+  </div>
 {:else}
   {#if filtered.length === 0}
-    <div style="border:1px dashed #cbd5e1; background:#f8fafc; border-radius:16px; padding:24px; text-align:center; color:#64748b;">
-      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-bottom:8px; color:#64748b;">
-        <rect x="4" y="4" width="16" height="14" rx="2" stroke="currentColor" stroke-width="2"/>
-        <path d="M7 8h10M7 12h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-      </svg>
-      <div style="font-weight:600;">Sense entrevistes</div>
-      <div style="font-size:14px;">Tria un curs al selector o revisa la configuració d'IDs a Config.</div>
+    <div class="empty-state">
+      <Icon name="notes" size={36} />
+      <div class="empty-title">Sense entrevistes</div>
+      <div class="empty-subtitle">Tria un curs al selector o revisa la configuració d'IDs a Config.</div>
     </div>
   {:else}
-    <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap:12px;">
+    <div class="entrevistas-grid">
       {#each filtered as e}
-        <article style="border:1px solid #eef2ff; background:#ffffff; border-radius:16px; padding:16px; box-shadow:0 10px 28px rgba(37,99,235,0.06); display:flex; flex-direction:column; gap:8px;">
-              <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
-                <strong style="font-size:14px; color:#111827;">{formatearFechaMadridSoloFecha(e.data) || '—'}</strong>
-            <div style="display:flex; gap:4px;">
-              <span style="font-size:12px; color:#2563eb; background:#eff6ff; border:1px solid #dbeafe; padding:2px 8px; border-radius:999px;">{e.anyCurs || selected || '—'}</span>
+        <article class="entrevista-card">
+          <div class="card-header">
+            <div class="entrevista-date">
+              <Icon name="calendar" size={16} />
+              <span>{formatearFechaMadridSoloFecha(e.data) || '—'}</span>
+            </div>
+            <div class="card-badges">
+              <span class="badge badge-primary">{e.anyCurs || selected || '—'}</span>
               {#if 'tipo' in e}
-                <span style="font-size:12px; color:{e.tipo === 'normal' ? '#059669' : '#7c3aed'}; background:{e.tipo === 'normal' ? '#ecfdf5' : '#f3e8ff'}; border:1px solid {e.tipo === 'normal' ? '#d1fae5' : '#e9d5ff'}; padding:2px 8px; border-radius:999px;">
+                <span class="badge {e.tipo === 'normal' ? 'badge-success' : 'badge-purple'}">
                   {e.tipo === 'normal' ? 'Actual' : 'Històric'}
                 </span>
               {/if}
             </div>
           </div>
-              <div style="font-size:13px; color:#111827;">Alumne: <span style="color:#374151;">{('alumneNom' in e ? e.alumneNom : '') || e.alumneId || '—'}</span></div>
-              {#if 'origen' in e && e.origen !== 'Sistema actual'}
-                <div style="font-size:12px; color:#6b7280; margin-bottom:4px;">
-                  Origen: {e.origen}
-                </div>
-              {/if}
+          
+          <div class="entrevista-student">
+            <Icon name="user" size={14} />
+            <span>Alumne: {('alumneNom' in e ? e.alumneNom : '') || e.alumneId || '—'}</span>
+          </div>
+          
+          {#if 'origen' in e && e.origen !== 'Sistema actual'}
+            <div class="entrevista-origin">
+              <Icon name="tag" size={12} />
+              <span>Origen: {e.origen}</span>
+            </div>
+          {/if}
+          
+          {#if 'tipo' in e && e.tipo === 'consolidada' && e.acords}
+            <!-- Para entrevistas consolidadas, parsear múltiples entradas -->
+            {#each e.acords.split('---').map(entry => entry.trim()).filter(entry => entry) as entry, index}
+              {@const parts = entry.split('\n').filter(part => part.trim())}
+              {@const dataLine = parts.find(part => part.startsWith('Data:'))}
+              {@const acordsLine = parts.find(part => part.startsWith('Acords:'))}
               
-              {#if 'tipo' in e && e.tipo === 'consolidada' && e.acords}
-                <!-- Para entrevistas consolidadas, parsear múltiples entradas -->
-                {#each e.acords.split('---').map(entry => entry.trim()).filter(entry => entry) as entry, index}
-                  {@const parts = entry.split('\n').filter(part => part.trim())}
-                  {@const dataLine = parts.find(part => part.startsWith('Data:'))}
-                  {@const acordsLine = parts.find(part => part.startsWith('Acords:'))}
-                  
-                  <div style="margin-bottom: {index < e.acords.split('---').length - 1 ? '12px' : '0px'};">
-                    {#if dataLine}
-                      <div style="background:#fef3c7; border:1px solid #fbbf24; border-radius:8px; padding:8px; margin-bottom:6px;">
-                        <strong style="font-size:12px; color:#92400e;">{dataLine}</strong>
-                      </div>
-                    {/if}
-                    {#if acordsLine}
-                      <div style="background:#f3f4f6; border:1px solid #d1d5db; border-radius:8px; padding:8px;">
-                        <div style="font-size:13px; color:#374151; line-height:1.4;">{acordsLine}</div>
-                      </div>
-                    {/if}
+              <div class="consolidada-entry">
+                {#if dataLine}
+                  <div class="consolidada-date">
+                    <Icon name="calendar" size={12} />
+                    <span>{dataLine}</span>
                   </div>
-                {/each}
-              {:else}
-                <!-- Para entrevistas normales, mostrar acords directamente -->
-                <div style="font-size:13px; color:#374151; line-height:1.4;">{e.acords || 'Sense acords'}</div>
-              {/if}
-              
-              <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:6px;">
-                <a href="/alumnes/{e.alumneId}" style="font-size:12px; padding:6px 10px; border:1px solid #e5e7eb; border-radius:10px; text-decoration:none; color:#111827;">Veure alumne</a>
-                {#if 'tipo' in e && e.tipo === 'normal'}
-                  <a href={`/entrevistes/editar/${e.id}`} style="font-size:12px; padding:6px 10px; border:1px solid #2563eb; background:#2563eb; color:#fff; border-radius:10px; text-decoration:none;">Editar</a>
-                  <button 
-                    onclick={() => borrarEntrevista(e.id, e.data)}
-                    style="font-size:12px; padding:6px 10px; border:1px solid #dc2626; background:#dc2626; color:#fff; border-radius:10px; cursor:pointer;"
-                  >
-                    Borrar
-                  </button>
+                {/if}
+                {#if acordsLine}
+                  <div class="consolidada-content">
+                    <span>{acordsLine}</span>
+                  </div>
                 {/if}
               </div>
+            {/each}
+          {:else}
+            <!-- Para entrevistas normales, mostrar acords directamente -->
+            <div class="entrevista-content">
+              <span>{e.acords || 'Sense acords'}</span>
+            </div>
+          {/if}
+          
+          <div class="card-actions">
+            <a href="/alumnes/{e.alumneId}" class="btn btn-text-primary btn-sm">
+              <Icon name="user" size={14} />
+              Veure alumne
+            </a>
+            {#if 'tipo' in e && e.tipo === 'normal'}
+              <a href={`/entrevistes/editar/${e.id}`} class="btn btn-filled-primary btn-sm">
+                <Icon name="edit" size={14} />
+                Editar
+              </a>
+              <button 
+                onclick={() => borrarEntrevista(e.id, e.data)}
+                class="btn btn-danger btn-sm"
+              >
+                <Icon name="trash" size={14} />
+                Borrar
+              </button>
+            {/if}
+          </div>
         </article>
       {/each}
     </div>
     
     {#if isAdmin && hasMore}
-      <div style="text-align:center; margin-top:20px;">
+      <div class="load-more">
         <button 
           onclick={loadMore} 
           disabled={loading}
-          style="padding:12px 24px; background:#2563eb; color:#fff; border:none; border-radius:10px; font-size:14px; cursor:pointer; disabled:opacity:50%;"
+          class="btn btn-filled-primary"
         >
+          {#if loading}
+            <span class="btn-spinner"></span>
+          {:else}
+            <Icon name="plus" size={16} />
+          {/if}
           {loading ? 'Carregant...' : 'Carregar més entrevistes'}
         </button>
       </div>
@@ -218,4 +261,352 @@
   {/if}
 {/if}
 
+<style>
+  /* === PAGE HEADER === */
+  .page-header {
+    margin-bottom: 2rem;
+  }
 
+  .header-content {
+    margin-bottom: 1.5rem;
+  }
+
+  .page-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: var(--text-2xl);
+    font-weight: 600;
+    color: var(--fg);
+    margin: 0 0 0.5rem 0;
+  }
+
+  .admin-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: var(--text-sm);
+    color: var(--success-600);
+    background: var(--success-50);
+    border: 1px solid var(--success-200);
+    padding: 0.5rem 1rem;
+    border-radius: 999px;
+    font-weight: 500;
+  }
+
+  /* === FILTERS === */
+  .filters {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    align-items: end;
+  }
+
+  .filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .filter-group label {
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--fg-secondary);
+  }
+
+  .select {
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--input-border);
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+    background: var(--input-bg);
+    color: var(--fg);
+    transition: all 0.2s ease;
+    min-width: 140px;
+  }
+
+  .select:focus {
+    outline: none;
+    border-color: var(--input-border-focus);
+    box-shadow: 0 0 0 3px var(--input-ring);
+  }
+
+  .search-input {
+    position: relative;
+  }
+
+  .input {
+    width: 100%;
+    padding: 0.75rem 1rem 0.75rem 2.5rem;
+    border: 1px solid var(--input-border);
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+    background: var(--input-bg);
+    color: var(--fg);
+    transition: all 0.2s ease;
+    min-width: 220px;
+  }
+
+  .input:focus {
+    outline: none;
+    border-color: var(--input-border-focus);
+    box-shadow: 0 0 0 3px var(--input-ring);
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--google-grey-400);
+    pointer-events: none;
+  }
+
+  /* === SKELETON LOADING === */
+  .skeleton-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1rem;
+  }
+
+  .skeleton-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-lg);
+    padding: 1rem;
+    box-shadow: var(--card-shadow);
+  }
+
+  .skeleton-line {
+    background: var(--google-grey-200);
+    border-radius: var(--radius-sm);
+    margin-bottom: 0.5rem;
+    animation: skeleton-pulse 1.5s ease-in-out infinite;
+  }
+
+  .skeleton-title {
+    height: 1rem;
+    width: 60%;
+  }
+
+  .skeleton-content {
+    height: 0.75rem;
+    width: 80%;
+  }
+
+  .skeleton-content-short {
+    height: 0.75rem;
+    width: 50%;
+  }
+
+  @keyframes skeleton-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  /* === ERROR CARD === */
+  .error-card {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: var(--error-50);
+    border: 1px solid var(--error-500);
+    border-radius: var(--radius-md);
+    color: var(--error-600);
+    font-size: var(--text-sm);
+  }
+
+  /* === EMPTY STATE === */
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 2rem;
+    background: var(--google-grey-50);
+    border: 2px dashed var(--google-grey-300);
+    border-radius: var(--radius-lg);
+    text-align: center;
+    color: var(--google-grey-600);
+  }
+
+  .empty-title {
+    font-weight: 600;
+    font-size: var(--text-lg);
+    margin: 1rem 0 0.5rem 0;
+  }
+
+  .empty-subtitle {
+    font-size: var(--text-sm);
+    opacity: 0.8;
+  }
+
+  /* === ENTREVISTAS GRID === */
+  .entrevistas-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1rem;
+  }
+
+  /* === ENTREVISTA CARD === */
+  .entrevista-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    box-shadow: var(--card-shadow);
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    transition: all 0.2s ease;
+  }
+
+  .entrevista-card:hover {
+    box-shadow: var(--card-shadow-hover);
+    transform: translateY(-2px);
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .entrevista-date {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    font-size: var(--text-sm);
+    color: var(--fg);
+  }
+
+  .card-badges {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .badge {
+    font-size: var(--text-xs);
+    font-weight: 500;
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
+    border: 1px solid;
+  }
+
+  .badge-primary {
+    color: var(--primary-600);
+    background: var(--primary-50);
+    border-color: var(--primary-200);
+  }
+
+  .badge-success {
+    color: var(--success-600);
+    background: var(--success-50);
+    border-color: var(--success-200);
+  }
+
+  .badge-purple {
+    color: #7c3aed;
+    background: #f3e8ff;
+    border-color: #e9d5ff;
+  }
+
+  .entrevista-student {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: var(--text-sm);
+    color: var(--fg);
+  }
+
+  .entrevista-origin {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: var(--text-xs);
+    color: var(--fg-secondary);
+  }
+
+  .entrevista-content {
+    font-size: var(--text-sm);
+    color: var(--fg-secondary);
+    line-height: 1.5;
+  }
+
+  .consolidada-entry {
+    margin-bottom: 1rem;
+  }
+
+  .consolidada-date {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--warning-50);
+    border: 1px solid var(--warning-500);
+    border-radius: var(--radius-md);
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    font-size: var(--text-xs);
+    font-weight: 600;
+    color: var(--warning-600);
+  }
+
+  .consolidada-content {
+    background: var(--google-grey-100);
+    border: 1px solid var(--google-grey-300);
+    border-radius: var(--radius-md);
+    padding: 0.75rem;
+    font-size: var(--text-sm);
+    color: var(--fg-secondary);
+    line-height: 1.4;
+  }
+
+  /* === CARD ACTIONS === */
+  .card-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    margin-top: auto;
+  }
+
+  /* === LOAD MORE === */
+  .load-more {
+    display: flex;
+    justify-content: center;
+    margin-top: 2rem;
+  }
+
+  /* === RESPONSIVE === */
+  @media (max-width: 768px) {
+    .filters {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .filter-group {
+      width: 100%;
+    }
+
+    .input, .select {
+      min-width: auto;
+      width: 100%;
+    }
+
+    .entrevistas-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .card-actions {
+      justify-content: stretch;
+    }
+
+    .card-actions .btn {
+      flex: 1;
+    }
+  }
+</style>

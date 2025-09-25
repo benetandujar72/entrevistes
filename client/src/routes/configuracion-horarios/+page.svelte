@@ -13,6 +13,9 @@
     type Tutor
   } from '$lib/index.js';
   import { toastSuccess, toastError } from '$lib/toast.js';
+  import Icon from '$lib/components/SimpleIcon.svelte';
+  import TextField from '$lib/components/TextField.svelte';
+  import Button from '$lib/components/Button.svelte';
 
   // Estado de la aplicación
   let tutorSeleccionat = '';
@@ -272,8 +275,8 @@
 <div class="container mx-auto p-6 max-w-6xl">
   <div class="mb-8">
     <div class="flex items-center gap-4 mb-4">
-      <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
-        <span class="text-white text-2xl">⚙️</span>
+      <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center text-white">
+        <Icon name="settings" size={24} />
       </div>
       <div>
         <h1 class="text-3xl font-bold text-gray-900 mb-1">Configuració de Horaris Dinàmics</h1>
@@ -285,8 +288,8 @@
   <!-- Selector de Tutor -->
   <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl shadow-lg p-6 mb-6 border border-blue-100">
     <div class="flex items-center gap-3 mb-4">
-      <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-        <span class="text-blue-600 text-xl">👨‍🏫</span>
+      <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600">
+        <Icon name="user" size={20} />
       </div>
       <h2 class="text-xl font-semibold text-gray-800">Selecció de Tutor</h2>
     </div>
@@ -320,30 +323,15 @@
 
   <!-- Botones de Acción -->
   <div class="flex flex-wrap gap-4 mb-6">
-    <button 
-      onclick={() => mostrarFormulario = !mostrarFormulario}
-      class="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-    >
-      <span class="text-lg">{mostrarFormulario ? '❌' : '➕'}</span>
+    <Button variant="filled" leadingIcon="plus" on:click={() => mostrarFormulario = !mostrarFormulario}>
       {mostrarFormulario ? 'Cancel·lar' : 'Nova Configuració'}
-    </button>
+    </Button>
     
-    <button 
-      onclick={carregarConfiguracions}
-      class="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-xl hover:from-gray-700 hover:to-gray-800 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-      disabled={loading}
-    >
-      <span class="text-lg">{loading ? '⏳' : '🔄'}</span>
-      {loading ? 'Carregant...' : 'Recarregar'}
-    </button>
+    <Button variant="outlined" on:click={carregarConfiguracions} disabled={loading}>
+      {loading ? 'Carregant…' : 'Recarregar'}
+    </Button>
     
-    <button 
-      onclick={carregarEventos}
-      class="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-    >
-      <span class="text-lg">📅</span>
-      Veure Events
-    </button>
+    <Button variant="tonal" leadingIcon="calendar" on:click={carregarEventos}>Veure Events</Button>
   </div>
 
   <!-- Formulario de Nueva Configuración -->
@@ -353,14 +341,7 @@
       
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <div>
-          <label for="nombre-config" class="block text-sm font-medium text-gray-700 mb-2">Nom de la Configuració</label>
-          <input 
-            id="nombre-config"
-            type="text" 
-            bind:value={nombreConfiguracion}
-            placeholder="Ex: Horaris Setmana 1"
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+          <TextField label="Nom de la Configuració" bind:value={nombreConfiguracion} placeholder="Ex: Horaris Setmana 1" />
         </div>
         
         <div>
@@ -377,23 +358,11 @@
         </div>
         
         <div>
-          <label for="fecha-inicio" class="block text-sm font-medium text-gray-700 mb-2">Data d'Inici</label>
-          <input 
-            id="fecha-inicio"
-            type="date" 
-            bind:value={fechaInicio}
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+          <TextField label="Data d'Inici" type="date" bind:value={fechaInicio} />
         </div>
         
         <div>
-          <label for="fecha-fin" class="block text-sm font-medium text-gray-700 mb-2">Data de Fi</label>
-          <input 
-            id="fecha-fin"
-            type="date" 
-            bind:value={fechaFin}
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+          <TextField label="Data de Fi" type="date" bind:value={fechaFin} />
         </div>
       </div>
 
@@ -401,26 +370,14 @@
       <div class="mb-6">
         <div class="flex justify-between items-center mb-4">
           <div class="flex items-center gap-3">
-            <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-              <span class="text-purple-600 text-lg">📅</span>
+            <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center text-purple-600">
+              <Icon name="calendar" size={18} />
             </div>
             <h3 class="text-lg font-medium">Configuració per Dies Laborables</h3>
           </div>
           <div class="flex gap-2">
-            <button 
-              onclick={activarTodosDias}
-              class="flex items-center gap-1 px-4 py-2 bg-green-100 text-green-700 rounded-lg text-sm hover:bg-green-200 transition-colors"
-            >
-              <span>✅</span>
-              Activar Tots
-            </button>
-            <button 
-              onclick={desactivarTodosDias}
-              class="flex items-center gap-1 px-4 py-2 bg-red-100 text-red-700 rounded-lg text-sm hover:bg-red-200 transition-colors"
-            >
-              <span>❌</span>
-              Desactivar Tots
-            </button>
+            <Button variant="tonal" leadingIcon="check" on:click={activarTodosDias}>Activar Tots</Button>
+            <Button variant="outlined" leadingIcon="alert-circle" on:click={desactivarTodosDias}>Desactivar Tots</Button>
           </div>
         </div>
 
@@ -439,13 +396,7 @@
                 </label>
                 
                 {#if dia.activo}
-                  <button 
-                    onclick={() => agregarFranja(dia.dia)}
-                    class="flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-sm hover:bg-blue-200 transition-colors"
-                  >
-                    <span>➕</span>
-                    Afegir Franja
-                  </button>
+                  <Button variant="tonal" size="sm" leadingIcon="plus" on:click={() => agregarFranja(dia.dia)}>Afegir Franja</Button>
                 {/if}
               </div>
               
@@ -453,8 +404,8 @@
                 <div class="space-y-3">
                   <!-- Franja principal -->
                   <div class="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                    <div class="flex items-center gap-2">
-                      <span class="text-blue-600">🕐</span>
+                    <div class="flex items-center gap-2 text-blue-600">
+                      <Icon name="calendar" size={16} />
                       <span class="text-sm font-medium text-blue-800">Franja Principal:</span>
                     </div>
                     <input 
@@ -470,21 +421,14 @@
                       onchange={() => actualizarFranjasDia(dia.dia)}
                       class="px-3 py-2 border border-blue-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
-                    <button 
-                      onclick={() => replicarDia(dia.dia)}
-                      class="flex items-center gap-1 px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors"
-                      title="Replicar aquesta configuració als altres dies actius"
-                    >
-                      <span>📋</span>
-                      Replicar
-                    </button>
+                    <Button variant="filled" size="sm" leadingIcon="notes" on:click={() => replicarDia(dia.dia)} title="Replicar aquesta configuració als altres dies actius">Replicar</Button>
                   </div>
 
                   <!-- Franjas adicionales -->
                   {#if dia.franjas && dia.franjas.length > 0}
                     <div class="space-y-2">
                       <h4 class="text-sm font-medium text-gray-700 flex items-center gap-2">
-                        <span>⏰</span>
+                        <Icon name="calendar" size={14} />
                         Franjes Horàries Generades:
                       </h4>
                       <div class="grid grid-cols-4 md:grid-cols-6 gap-2">
@@ -501,7 +445,7 @@
                   {#if dia.franjas && dia.franjas.length > 0}
                     <div class="space-y-2">
                       <h4 class="text-sm font-medium text-gray-700 flex items-center gap-2">
-                        <span>⚙️</span>
+                        <Icon name="settings" size={14} />
                         Franjes Personalitzades:
                       </h4>
                       {#each dia.franjas as franja, franjaIndex}
@@ -517,12 +461,7 @@
                             bind:value={franja.fin}
                             class="px-2 py-1 border border-gray-300 rounded text-sm"
                           />
-                          <button 
-                            onclick={() => eliminarFranja(dia.dia, franjaIndex)}
-                            class="px-2 py-1 bg-red-100 text-red-700 rounded text-xs hover:bg-red-200"
-                          >
-                            🗑️
-                          </button>
+                          <Button variant="outlined" size="sm" leadingIcon="alert-circle" on:click={() => eliminarFranja(dia.dia, franjaIndex)} />
                         </div>
                       {/each}
                     </div>
@@ -536,22 +475,8 @@
 
       <!-- Botones del Formulario -->
       <div class="flex gap-4 pt-4 border-t border-gray-200">
-        <button 
-          onclick={guardarConfiguracion}
-          disabled={loading}
-          class="flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:transform-none"
-        >
-          <span class="text-lg">{loading ? '⏳' : '💾'}</span>
-          {loading ? 'Guardant...' : 'Guardar Configuració'}
-        </button>
-        
-        <button 
-          onclick={() => mostrarFormulario = false}
-          class="flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-xl hover:from-gray-600 hover:to-gray-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-        >
-          <span class="text-lg">❌</span>
-          Cancel·lar
-        </button>
+        <Button variant="filled" on:click={guardarConfiguracion} loading={loading} leadingIcon="check">{loading ? 'Guardant…' : 'Guardar Configuració'}</Button>
+        <Button variant="outlined" leadingIcon="alert-circle" on:click={() => mostrarFormulario = false}>Cancel·lar</Button>
       </div>
     </div>
   {/if}

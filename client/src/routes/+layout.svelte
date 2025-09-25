@@ -35,11 +35,59 @@
         }
         
         const t = getToken();
-        if (authDisabled || t) {
+        
+        // Si la autenticación está deshabilitada, permitir acceso
+        if (authDisabled) {
             authed = true;
-            if (authDisabled) {
-                isAdmin = true;
-                userEmail = 'admin@entrevistes.local';
+            isAdmin = true;
+            userEmail = 'admin@entrevistes.local';
+        } else {
+            // Si la autenticación está habilitada, verificar token válido
+            if (t) {
+                try {
+                    // Verificar que el token es válido haciendo una petición autenticada
+                    const r = await fetch('http://localhost:8081/usuaris/me', {
+                        headers: { Authorization: `Bearer ${t}` }
+                    });
+                    if (r.ok) {
+                        const data = await r.json();
+                        authed = true;
+                        isAdmin = data.role === 'admin';
+                        userEmail = data.email;
+                    } else {
+                        // Token inválido
+                        authed = false;
+                        clearToken();
+                        console.log('Token inválido - redirigiendo al login');
+                        // Solo redirigir si no estamos ya en la página de login
+                        if (window.location.pathname !== '/') {
+                            setTimeout(() => {
+                                window.location.href = '/';
+                            }, 1000);
+                        }
+                    }
+                } catch (error) {
+                    // Error verificando token
+                    authed = false;
+                    clearToken();
+                    console.log('Error verificando token - redirigiendo al login');
+                    // Solo redirigir si no estamos ya en la página de login
+                    if (window.location.pathname !== '/') {
+                        setTimeout(() => {
+                            window.location.href = '/';
+                        }, 1000);
+                    }
+                }
+            } else {
+                // No hay token
+                authed = false;
+                console.log('No hay token - redirigiendo al login');
+                // Solo redirigir si no estamos ya en la página de login
+                if (window.location.pathname !== '/') {
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 1000);
+                }
             }
         }
         
@@ -182,6 +230,10 @@
 					<Icon name="settings" size={18} />
 					{#if !sidebarCollapsed}<span>Eines</span>{/if}
 				</a>
+				<a href="/importar-dades" class="nav-link" class:active={$page.url.pathname.startsWith('/importar-dades')}>
+					<Icon name="upload" size={18} />
+					{#if !sidebarCollapsed}<span>Importar Dades</span>{/if}
+				</a>
 			</div>
 			
 			<!-- Configuración -->
@@ -239,18 +291,22 @@
 		{@render children?.()}
 	</main>
 </div>
-{:else}
-<!-- No autenticado: solo renderizamos la página de login (ruta '/') sin menú -->
-{#if $page.url.pathname === '/'}
-    <main style="flex:1; padding:0; background: var(--bg); color: var(--fg);">
-        {@render children?.()}
-    </main>
-{:else}
-    <main style="display:flex; align-items:center; justify-content:center; min-height:100dvh; padding:24px; background: var(--bg); color: var(--fg);">
-        <div style="padding:16px; border:1px solid #e5e7eb; background:#fff; border-radius:12px;">Redirigint al login…</div>
-    </main>
-{/if}
-{/if}
+        {:else}
+        <!-- No autenticado: solo renderizamos la página de login (ruta '/') sin menú -->
+        {#if $page.url.pathname === '/'}
+            <main style="flex:1; padding:0; background: var(--bg); color: var(--fg);">
+                {@render children?.()}
+            </main>
+        {:else}
+            <main style="display:flex; align-items:center; justify-content:center; min-height:100dvh; padding:24px; background: var(--bg); color: var(--fg);">
+                <div style="padding:24px; border:1px solid var(--border); background:var(--card-bg); border-radius:12px; text-align:center; box-shadow:var(--shadow-sm);">
+                    <div style="font-size:18px; font-weight:600; margin-bottom:8px; color:var(--fg);">Accés denegat</div>
+                    <div style="font-size:14px; color:var(--fg-secondary); margin-bottom:16px;">Redirigint al login...</div>
+                    <div style="font-size:12px; color:var(--fg-secondary);">Si no es redirigeix automàticament, <a href="/" style="color:var(--primary-600); text-decoration:none;">fes clic aquí</a></div>
+                </div>
+            </main>
+        {/if}
+        {/if}
 
         <style>
           /* Sistema de diseño ya importado globalmente */

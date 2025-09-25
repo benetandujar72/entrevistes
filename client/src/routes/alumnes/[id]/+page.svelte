@@ -19,6 +19,9 @@
     type Me
   } from '$lib';
   import { toastError, toastSuccess } from '$lib/toast';
+  import Tabs from '$lib/components/Tabs.svelte';
+  import Button from '$lib/components/Button.svelte';
+  import Icon from '$lib/components/SimpleIcon.svelte';
 
   let alumneId: string = '';
   let dadesPersonals: DadesPersonals | null = null;
@@ -232,7 +235,7 @@
     </div>
   {:else if error}
     <div class="error">
-      <h2>❌ Error</h2>
+      <h2>Error</h2>
       <p>{error}</p>
     </div>
   {:else if dadesPersonals}
@@ -243,24 +246,34 @@
           <h1 class="alumne-nom">{dadesPersonals.alumne_nom}</h1>
           <div class="alumne-details">
             <span class="detail-item">
-              <strong>📧 Email:</strong> {dadesPersonals.alumne_email || 'No disponible'}
+              <Icon name="mail" size={14} /> 
+              <a href="mailto:{dadesPersonals.alumne_email}" class="email-link">
+                {dadesPersonals.alumne_email || 'No disponible'}
+              </a>
             </span>
             <span class="detail-item">
-              <strong>👨‍🏫 Tutor:</strong> {dadesPersonals.tutor_email}
+              <Icon name="user" size={14} /> 
+              <a href="mailto:{dadesPersonals.tutor_email}" class="email-link">
+                {dadesPersonals.tutor_email}
+              </a>
             </span>
+            {#if dadesPersonals.tutor_personal_email}
+              <span class="detail-item">
+                <Icon name="graduation-cap" size={14} /> 
+                <a href="mailto:{dadesPersonals.tutor_personal_email}" class="email-link">
+                  {dadesPersonals.tutor_personal_nom} ({dadesPersonals.tutor_personal_email})
+                </a>
+              </span>
+            {/if}
             <span class="detail-item">
-              <strong>🏫 Grup:</strong> {dadesPersonals.grup_nom}
+              <Icon name="tag" size={14} /> {dadesPersonals.grup_nom}
             </span>
           </div>
         </div>
         <div class="header-actions">
           {#if me?.role === 'admin'}
-            <button class="btn btn-success" onclick={exportarCSV}>
-              📊 Exportar CSV
-            </button>
-            <button class="btn btn-danger" onclick={eliminarAlumneConfirmat}>
-              🗑️ Eliminar
-            </button>
+            <Button variant="tonal" leadingIcon="download" on:click={exportarCSV}>Exportar CSV</Button>
+            <Button variant="outlined" leadingIcon="trash" on:click={eliminarAlumneConfirmat}>Eliminar</Button>
           {/if}
         </div>
       </div>
@@ -268,32 +281,7 @@
 
     <!-- Pestañas de navegación -->
     <div class="tabs-container">
-      <div class="tabs">
-        <button 
-          class="tab" 
-          class:active={activeTab === 'dades'}
-          onclick={() => activeTab = 'dades'}
-        >
-          <span class="tab-icon">👤</span>
-          <span class="tab-text">Dades del Alumne</span>
-        </button>
-        <button 
-          class="tab" 
-          class:active={activeTab === 'entrevistes'}
-          onclick={() => activeTab = 'entrevistes'}
-        >
-          <span class="tab-icon">📝</span>
-          <span class="tab-text">Històric</span>
-        </button>
-        <button 
-          class="tab" 
-          class:active={activeTab === 'calendari'}
-          onclick={() => activeTab = 'calendari'}
-        >
-          <span class="tab-icon">📅</span>
-          <span class="tab-text">Calendari</span>
-        </button>
-      </div>
+      <Tabs tabs={[{id:'dades',label:'Dades del Alumne',icon:'user'},{id:'entrevistes',label:'Històric',icon:'notes'},{id:'calendari',label:'Calendari',icon:'calendar'}]} activeId={activeTab} onChange={(id)=> activeTab = id as any} />
     </div>
 
     <!-- Contenido de las pestañas -->
@@ -302,14 +290,14 @@
         <!-- Pestaña: Dades del Alumne -->
         <div class="dades-section">
           <div class="section-header">
-            <h2>👤 Dades Personals</h2>
+            <h2>Dades Personals</h2>
           </div>
           
           <div class="dades-grid">
             <!-- Información personal -->
             <div class="info-card personal">
               <div class="card-header">
-                <h3>🆔 Informació Personal</h3>
+                <h3>Informació Personal</h3>
               </div>
               <div class="card-content">
                 <div class="info-row">
@@ -342,7 +330,7 @@
             <!-- Documentación -->
             <div class="info-card documents">
               <div class="card-header">
-                <h3>📄 Documentació</h3>
+                <h3>Documentació</h3>
               </div>
               <div class="card-content">
                 <div class="info-row">
@@ -363,7 +351,7 @@
             <!-- Dirección -->
             <div class="info-card address">
               <div class="card-header">
-                <h3>🏠 Adreça</h3>
+                <h3>Adreça</h3>
               </div>
               <div class="card-content">
                 <div class="info-row">
@@ -384,12 +372,34 @@
             <!-- Tutores -->
             <div class="info-card tutors">
               <div class="card-header">
-                <h3>👨‍👩‍👧‍👦 Tutores</h3>
+                <h3>Tutores</h3>
               </div>
               <div class="card-content">
+                {#if dadesPersonals.tutor_personal_nom}
+                  <div class="tutor-section">
+                    <h4>Tutor/a Personal (Professor)</h4>
+                    <div class="info-row">
+                      <span class="label">Nom:</span>
+                      <span class="value">{dadesPersonals.tutor_personal_nom}</span>
+                    </div>
+                    <div class="info-row">
+                      <span class="label">Email:</span>
+                      <span class="value">
+                        {#if dadesPersonals.tutor_personal_email}
+                          <a href="mailto:{dadesPersonals.tutor_personal_email}" class="email-link">
+                            {dadesPersonals.tutor_personal_email}
+                          </a>
+                        {:else}
+                          No disponible
+                        {/if}
+                      </span>
+                    </div>
+                  </div>
+                {/if}
+
                 {#if dadesPersonals.tutor1_nom}
                   <div class="tutor-section">
-                    <h4>Tutor/a 1</h4>
+                    <h4>Tutor/a Legal 1</h4>
                     <div class="info-row">
                       <span class="label">Nom:</span>
                       <span class="value">{dadesPersonals.tutor1_nom}</span>
@@ -400,14 +410,22 @@
                     </div>
                     <div class="info-row">
                       <span class="label">Email:</span>
-                      <span class="value">{dadesPersonals.tutor1_email || 'No disponible'}</span>
+                      <span class="value">
+                        {#if dadesPersonals.tutor1_email}
+                          <a href="mailto:{dadesPersonals.tutor1_email}" class="email-link">
+                            {dadesPersonals.tutor1_email}
+                          </a>
+                        {:else}
+                          No disponible
+                        {/if}
+                      </span>
                     </div>
                   </div>
                 {/if}
                 
                 {#if dadesPersonals.tutor2_nom}
                   <div class="tutor-section">
-                    <h4>Tutor/a 2</h4>
+                    <h4>Tutor/a Legal 2</h4>
                     <div class="info-row">
                       <span class="label">Nom:</span>
                       <span class="value">{dadesPersonals.tutor2_nom}</span>
@@ -418,7 +436,15 @@
                     </div>
                     <div class="info-row">
                       <span class="label">Email:</span>
-                      <span class="value">{dadesPersonals.tutor2_email || 'No disponible'}</span>
+                      <span class="value">
+                        {#if dadesPersonals.tutor2_email}
+                          <a href="mailto:{dadesPersonals.tutor2_email}" class="email-link">
+                            {dadesPersonals.tutor2_email}
+                          </a>
+                        {:else}
+                          No disponible
+                        {/if}
+                      </span>
                     </div>
                   </div>
                 {/if}
@@ -431,10 +457,8 @@
         <!-- Pestaña: Històric Entrevistes -->
         <div class="entrevistes-section">
           <div class="section-header">
-            <h2>📝 Històric d'Entrevistes</h2>
-            <button class="btn btn-primary" onclick={() => showSolicitutForm = !showSolicitutForm}>
-              📧 Solicitar Canvi de Dades
-            </button>
+            <h2>Històric d'Entrevistes</h2>
+            <Button variant="tonal" leadingIcon="mail" on:click={() => showSolicitutForm = !showSolicitutForm}>Solicitar Canvi de Dades</Button>
           </div>
 
           {#if showSolicitutForm}
@@ -476,7 +500,7 @@
             </div>
           {:else if historialEntrevistes.length === 0}
             <div class="empty-state">
-              <div class="empty-icon">📝</div>
+              <div class="empty-icon">No data</div>
               <h3>No hi ha entrevistes</h3>
               <p>Encara no s'han registrat entrevistes per aquest alumne.</p>
             </div>
@@ -510,10 +534,8 @@
         <!-- Pestaña: Calendari -->
         <div class="calendari-section">
           <div class="section-header">
-            <h2>📅 Calendari de Cites</h2>
-            <button class="btn btn-primary" onclick={() => showCitaForm = !showCitaForm}>
-              ➕ Nova Cita
-            </button>
+            <h2>Calendari de Cites</h2>
+            <Button variant="filled" leadingIcon="plus" on:click={() => showCitaForm = !showCitaForm}>Nova Cita</Button>
           </div>
 
           {#if showCitaForm}
@@ -551,12 +573,8 @@
                 </div>
               </div>
               <div class="form-actions">
-                <button class="btn btn-primary" onclick={crearCita} disabled={loadingCita}>
-                  {loadingCita ? 'Creant...' : 'Crear Cita'}
-                </button>
-                <button class="btn btn-secondary" onclick={() => showCitaForm = false}>
-                  Cancel·lar
-                </button>
+                <Button variant="filled" on:click={crearCita} disabled={loadingCita}>{loadingCita ? 'Creant…' : 'Crear Cita'}</Button>
+                <Button variant="outlined" on:click={() => showCitaForm = false}>Cancel·lar</Button>
               </div>
             </div>
           {/if}
@@ -618,9 +636,7 @@
 
                   {#if cita.estat === 'pendent'}
                     <div class="cita-actions">
-                      <button class="btn btn-success btn-sm" onclick={() => handleConfirmarCita(cita.id)}>
-                        ✅ Confirmar Cita
-                      </button>
+                      <Button variant="tonal" size="sm" leadingIcon="check" on:click={() => handleConfirmarCita(cita.id)}>Confirmar Cita</Button>
                     </div>
                   {/if}
                 </div>
@@ -1195,6 +1211,23 @@
   .empty-state p {
     margin: 0;
     font-size: 1.1rem;
+  }
+
+  /* Email links */
+  .email-link {
+    color: #1976d2;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s ease;
+  }
+
+  .email-link:hover {
+    color: #1565c0;
+    text-decoration: underline;
+  }
+
+  .email-link:visited {
+    color: #7b1fa2;
   }
 
   /* Responsive */

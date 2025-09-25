@@ -23,13 +23,13 @@
 		}
 	});
 	
-	function setActiveTab(tabId: string) {
-		activeTab = tabId;
-		const tab = tabs.find(t => t.id === tabId);
-		if (tab) {
-			window.location.href = tab.route;
-		}
-	}
+    function setActiveTab(tabId: string) {
+        activeTab = tabId;
+        const tab = tabs.find(t => t.id === tabId);
+        if (tab) {
+            window.location.assign(tab.route);
+        }
+    }
 </script>
 
 <div style="min-height: 100vh; background: var(--bg);">

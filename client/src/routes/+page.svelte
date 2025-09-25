@@ -10,9 +10,8 @@
   let showDev = false;
   let seedEmail = 'benet.andujar@insbitacola.cat';
 
-  function handleCredentialResponse(resp: any) {
+  async function handleCredentialResponse(resp: any) {
     token = resp.credential;
-    // Nota: para validar el token, enviar al backend en un flujo real
     profile = null;
     if (token) {
       // Validar dominio en el JWT (parte payload) para feedback temprano
@@ -24,10 +23,24 @@
           return;
         }
       } catch {}
-      setToken(token);
+      
+      // Validar token con el backend
+      try {
+        const r = await fetch('http://localhost:8081/usuaris/me', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (r.ok) {
+          const data = await r.json();
+          setToken(token);
+          try { toastSuccess(`Benvingut ${data.email}`); } catch {}
+          location.href = '/dashboard';
+        } else {
+          alert('Token inválido. Intenta de nuevo.');
+        }
+      } catch (error) {
+        alert('Error validando token. Intenta de nuevo.');
+      }
     }
-    // redirigir a dashboard
-    location.href = '/dashboard';
   }
 
   onMount(() => {

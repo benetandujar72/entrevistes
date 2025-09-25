@@ -9,6 +9,7 @@
 	const tabs = [
 		{ id: 'general', label: 'General', icon: 'settings', route: '/config' },
 		{ id: 'horaris', label: 'Horaris', icon: 'settings', route: '/configuracion-horarios' },
+		{ id: 'importar', label: 'Importar Dades', icon: 'upload', route: '/importar-dades' },
 		{ id: 'diagnostic', label: 'Diagnòstic', icon: 'settings', route: '/diagnostic' }
 	];
 	
@@ -21,13 +22,13 @@
 		}
 	});
 	
-	function setActiveTab(tabId: string) {
-		activeTab = tabId;
-		const tab = tabs.find(t => t.id === tabId);
-		if (tab) {
-			window.location.href = tab.route;
-		}
-	}
+    function setActiveTab(tabId: string) {
+        activeTab = tabId;
+        const tab = tabs.find(t => t.id === tabId);
+        if (tab) {
+            window.location.assign(tab.route);
+        }
+    }
 </script>
 
 <div style="min-height: 100vh; background: var(--bg);">
@@ -38,7 +39,7 @@
 				Configuració
 			</h1>
 			<p style="margin: 0; color: #6b7280; font-size: 16px;">
-				Gestiona la configuració general, horaris i diagnòstic del sistema
+				Gestiona la configuració general, horaris, importació de dades i diagnòstic del sistema
 			</p>
 		</div>
 	</div>
