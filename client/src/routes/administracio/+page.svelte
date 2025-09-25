@@ -1,16 +1,17 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
+	import Icon from '$lib/components/SimpleIcon.svelte';
 	
 	let activeTab = $state('usuaris');
 	
 	// Definir las pestañas disponibles
 	const tabs = [
-		{ id: 'usuaris', label: 'Usuaris', icon: '👥', route: '/admin/usuaris' },
-		{ id: 'assignacions', label: 'Assignacions', icon: '📋', route: '/admin/assignacions' },
-		{ id: 'tutories', label: 'Tutories', icon: '🎓', route: '/admin/tutories' },
-		{ id: 'tutores', label: 'Tutores', icon: '👨‍🏫', route: '/admin/tutores' },
-		{ id: 'estadistiques', label: 'Estadístiques', icon: '📊', route: '/admin/estadisticas' }
+		{ id: 'usuaris', label: 'Usuaris', icon: 'users', route: '/admin/usuaris' },
+		{ id: 'assignacions', label: 'Assignacions', icon: 'notes', route: '/admin/assignacions' },
+		{ id: 'tutories', label: 'Tutories', icon: 'user', route: '/admin/tutories' },
+		{ id: 'tutores', label: 'Tutores', icon: 'user', route: '/admin/tutores' },
+		{ id: 'estadistiques', label: 'Estadístiques', icon: 'dashboard', route: '/admin/estadisticas' }
 	];
 	
 	// Detectar la pestaña activa basada en la ruta actual
@@ -69,7 +70,7 @@
 							flex-shrink: 0;
 						"
 					>
-						<span style="font-size: 16px;">{tab.icon}</span>
+						<Icon name={tab.icon} size={16} />
 						{tab.label}
 					</button>
 				{/each}
@@ -82,7 +83,9 @@
 		<div style="background: white; border-radius: 12px; border: 1px solid #e5e7eb; padding: 24px; min-height: 400px;">
 			{#if activeTab === 'usuaris'}
 				<div style="text-align: center; padding: 40px 20px;">
-					<div style="font-size: 48px; margin-bottom: 16px;">👥</div>
+					<div style="font-size: 48px; margin-bottom: 16px; color: var(--primary-600);">
+						<Icon name="users" size={48} />
+					</div>
 					<h2 style="margin: 0 0 8px; font-size: 24px; color: #111827;">Gestió d'Usuaris</h2>
 					<p style="margin: 0 0 24px; color: #6b7280;">Gestiona els usuaris del sistema i els seus permisos</p>
 					<a 
@@ -107,7 +110,9 @@
 				</div>
 			{:else if activeTab === 'assignacions'}
 				<div style="text-align: center; padding: 40px 20px;">
-					<div style="font-size: 48px; margin-bottom: 16px;">📋</div>
+					<div style="font-size: 48px; margin-bottom: 16px; color: var(--primary-600);">
+						<Icon name="notes" size={48} />
+					</div>
 					<h2 style="margin: 0 0 8px; font-size: 24px; color: #111827;">Assignacions</h2>
 					<p style="margin: 0 0 24px; color: #6b7280;">Gestiona les assignacions d'usuaris i rols</p>
 					<a 
@@ -132,7 +137,9 @@
 				</div>
 			{:else if activeTab === 'tutories'}
 				<div style="text-align: center; padding: 40px 20px;">
-					<div style="font-size: 48px; margin-bottom: 16px;">🎓</div>
+					<div style="font-size: 48px; margin-bottom: 16px; color: var(--primary-600);">
+						<Icon name="user" size={48} />
+					</div>
 					<h2 style="margin: 0 0 8px; font-size: 24px; color: #111827;">Tutories</h2>
 					<p style="margin: 0 0 24px; color: #6b7280;">Gestiona les tutories i el seu seguiment</p>
 					<a 
@@ -157,7 +164,9 @@
 				</div>
 			{:else if activeTab === 'tutores'}
 				<div style="text-align: center; padding: 40px 20px;">
-					<div style="font-size: 48px; margin-bottom: 16px;">👨‍🏫</div>
+					<div style="font-size: 48px; margin-bottom: 16px; color: var(--primary-600);">
+						<Icon name="user" size={48} />
+					</div>
 					<h2 style="margin: 0 0 8px; font-size: 24px; color: #111827;">Tutores</h2>
 					<p style="margin: 0 0 24px; color: #6b7280;">Gestiona els tutors i les seves assignacions</p>
 					<a 
@@ -182,7 +191,9 @@
 				</div>
 			{:else if activeTab === 'estadistiques'}
 				<div style="text-align: center; padding: 40px 20px;">
-					<div style="font-size: 48px; margin-bottom: 16px;">📊</div>
+					<div style="font-size: 48px; margin-bottom: 16px; color: var(--primary-600);">
+						<Icon name="dashboard" size={48} />
+					</div>
 					<h2 style="margin: 0 0 8px; font-size: 24px; color: #111827;">Estadístiques</h2>
 					<p style="margin: 0 0 24px; color: #6b7280;">Visualitza estadístiques i informes del sistema</p>
 					<a 

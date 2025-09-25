@@ -1,14 +1,15 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
+	import Icon from '$lib/components/SimpleIcon.svelte';
 	
 	let activeTab = $state('general');
 	
 	// Definir las pestañas disponibles
 	const tabs = [
-		{ id: 'general', label: 'General', icon: '⚙️', route: '/config' },
-		{ id: 'horaris', label: 'Horaris', icon: '🕐', route: '/configuracion-horarios' },
-		{ id: 'diagnostic', label: 'Diagnòstic', icon: '🔍', route: '/diagnostic' }
+		{ id: 'general', label: 'General', icon: 'settings', route: '/config' },
+		{ id: 'horaris', label: 'Horaris', icon: 'settings', route: '/configuracion-horarios' },
+		{ id: 'diagnostic', label: 'Diagnòstic', icon: 'settings', route: '/diagnostic' }
 	];
 	
 	// Detectar la pestaña activa basada en la ruta actual
@@ -65,7 +66,7 @@
 							border-radius: 8px 8px 0 0;
 						"
 					>
-						<span style="font-size: 16px;">{tab.icon}</span>
+						<Icon name={tab.icon} size={16} />
 						{tab.label}
 					</button>
 				{/each}
@@ -78,7 +79,9 @@
 		<div style="background: white; border-radius: 12px; border: 1px solid #e5e7eb; padding: 24px; min-height: 400px;">
 			{#if activeTab === 'general'}
 				<div style="text-align: center; padding: 40px 20px;">
-					<div style="font-size: 48px; margin-bottom: 16px;">⚙️</div>
+					<div style="font-size: 48px; margin-bottom: 16px; color: var(--primary-600);">
+						<Icon name="settings" size={48} />
+					</div>
 					<h2 style="margin: 0 0 8px; font-size: 24px; color: #111827;">Configuració General</h2>
 					<p style="margin: 0 0 24px; color: #6b7280;">Gestiona la configuració bàsica del sistema</p>
 					<a 
@@ -103,7 +106,9 @@
 				</div>
 			{:else if activeTab === 'horaris'}
 				<div style="text-align: center; padding: 40px 20px;">
-					<div style="font-size: 48px; margin-bottom: 16px;">🕐</div>
+					<div style="font-size: 48px; margin-bottom: 16px; color: var(--primary-600);">
+						<Icon name="settings" size={48} />
+					</div>
 					<h2 style="margin: 0 0 8px; font-size: 24px; color: #111827;">Configuració d'Horaris</h2>
 					<p style="margin: 0 0 24px; color: #6b7280;">Gestiona els horaris i disponibilitat del sistema</p>
 					<a 

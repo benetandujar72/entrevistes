@@ -30,7 +30,7 @@ services:
       SHEETS_SPREADSHEET_ID: ${SHEETS_SPREADSHEET_ID}
       GOOGLE_CLIENT_ID: 582773400896-0io28jocfebl0aec7u5bnr6up367chs6.apps.googleusercontent.com
       ANY_ACTUAL: ${ANY_ACTUAL:-2025-2026}
-      DISABLE_AUTH: "0"
+      DISABLE_AUTH: "1"
     depends_on:
       db:
         condition: service_healthy
