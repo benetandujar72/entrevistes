@@ -490,7 +490,26 @@ export async function consolidarCurs(curs: string): Promise<ConsolidacionResult>
     headers: { ...authHeaders(), 'Content-Type': 'application/json' },
     body: JSON.stringify({ curs })
   });
-  if (!res.ok) throw new Error('Error consolidant curs');
+  
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({ error: 'Error desconocido' }));
+    throw new Error(`Error consolidant curs: ${errorData.error || res.statusText}`);
+  }
+  
+  return res.json();
+}
+
+export async function initConsolidacionConfig(): Promise<{ message: string; status: string }> {
+  const res = await fetch(`${BASE}/consolidacion/init-config`, {
+    method: 'POST',
+    headers: { ...authHeaders(), 'Content-Type': 'application/json' }
+  });
+  
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({ error: 'Error desconocido' }));
+    throw new Error(`Error inicializando configuración: ${errorData.error || res.statusText}`);
+  }
+  
   return res.json();
 }
 

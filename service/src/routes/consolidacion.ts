@@ -364,6 +364,45 @@ router.get('/cursos', async (req, res) => {
   }
 });
 
+// POST /consolidacion/init-config - Inicializar configuración para consolidación
+router.post('/init-config', async (req, res) => {
+  try {
+    // Verificar si ya existe configuración
+    const existingConfig = await query(`
+      SELECT COUNT(*) as count FROM config WHERE clave = 'anyActual'
+    `);
+    
+    if (existingConfig.rows[0].count > 0) {
+      return res.json({ 
+        message: 'Configuración ya existe', 
+        status: 'exists' 
+      });
+    }
+    
+    // Insertar configuración básica
+    await query(`
+      INSERT INTO config (clave, valor, descripcion) VALUES 
+      ('anyActual', '"2025-2026"', 'Año académico actual'),
+      ('1rSpreadsheetId', '""', 'ID del spreadsheet para 1r ESO'),
+      ('2nSpreadsheetId', '""', 'ID del spreadsheet para 2n ESO'),
+      ('3rSpreadsheetId', '""', 'ID del spreadsheet para 3r ESO'),
+      ('4tSpreadsheetId', '""', 'ID del spreadsheet para 4t ESO')
+      ON CONFLICT (clave) DO NOTHING
+    `);
+    
+    res.json({ 
+      message: 'Configuración inicializada correctamente', 
+      status: 'created' 
+    });
+  } catch (error) {
+    console.error('Error inicializando configuración:', error);
+    res.status(500).json({ 
+      error: 'Error inicializando configuración',
+      details: (error as any).message 
+    });
+  }
+});
+
 // POST /consolidacion/consolidar - Consolidar entrevistes per a un curs
 router.post('/consolidar', async (req, res) => {
   try {

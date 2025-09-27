@@ -5,6 +5,7 @@
     consolidarCurs, 
     fetchConsolidacionLogs, 
     fetchEntrevistesConsolidadas,
+    initConsolidacionConfig,
     type CursDisponible,
     type ConsolidacionResult,
     type ConsolidacionLog,
@@ -20,6 +21,7 @@
   let entrevistes: EntrevistaConsolidada[] = [];
   let mostrarLogs = false;
   let mostrarEntrevistes = false;
+  let inicializando = false;
 
   onMount(async () => {
     await carregarCursos();
@@ -79,6 +81,20 @@
     }
   }
 
+  async function inicializarConfiguracion() {
+    inicializando = true;
+    try {
+      const result = await initConsolidacionConfig();
+      alert(`Configuración inicializada: ${result.message}`);
+      await carregarCursos();
+    } catch (error) {
+      console.error('Error inicializando configuración:', error);
+      alert('Error inicializando configuración: ' + (error as Error).message);
+    } finally {
+      inicializando = false;
+    }
+  }
+
   function formatearData(data: string) {
     return new Date(data).toLocaleString('ca-ES');
   }
@@ -104,10 +120,36 @@
     </p>
   </div>
 
-  <!-- Selecció de Curs i Consolidació -->
+  <!-- Inicialización de Configuración -->
   <div class="card">
     <div class="card-header">
       <Icon name="settings" size={20} />
+      <h2>Configuración</h2>
+    </div>
+    
+    <div class="form-group">
+      <button
+        onclick={inicializarConfiguracion}
+        disabled={inicializando}
+        class="btn btn-outline-primary"
+      >
+        {#if inicializando}
+          <span class="btn-spinner"></span>
+        {:else}
+          <Icon name="settings" size={16} />
+        {/if}
+        {inicializando ? 'Inicializando...' : 'Inicializar Configuración'}
+      </button>
+      <p class="help-text">
+        Inicializa la configuración necesaria para la consolidación de entrevistas.
+      </p>
+    </div>
+  </div>
+
+  <!-- Selecció de Curs i Consolidació -->
+  <div class="card">
+    <div class="card-header">
+      <Icon name="download" size={20} />
       <h2>Consolidar Curs</h2>
     </div>
     
