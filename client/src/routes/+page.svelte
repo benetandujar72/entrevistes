@@ -7,8 +7,7 @@
   import Icon from '$lib/components/SimpleIcon.svelte';
   let token: string | null = getToken();
   let profile: any = null;
-  let showDev = false;
-  let seedEmail = 'benet.andujar@insbitacola.cat';
+  // Solo Google OAuth - eliminadas opciones inseguras
 
   async function handleCredentialResponse(resp: any) {
     token = resp.credential;
@@ -44,7 +43,6 @@
   }
 
   onMount(() => {
-    try { showDev = location.hostname === 'localhost'; } catch {}
     // @ts-ignore
     if (window.google?.accounts?.id) {
       // @ts-ignore
@@ -54,30 +52,7 @@
     }
   });
 
-  async function forceAdmin() {
-    try {
-      const r = await fetch('http://localhost:8081/usuaris/seed-admin', {
-        method: 'POST',
-        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: seedEmail })
-      });
-      const text = await r.text();
-      if (!r.ok) throw new Error(text || 'Error');
-      try { toastSuccess('Admin creat/confirmat'); } catch {}
-      try { localStorage.setItem('entrevistes.isAdmin', '1'); } catch {}
-      location.href = '/dashboard';
-    } catch (e: any) {
-      try { toastError(e?.message || 'Error'); } catch {}
-      alert('Error forçant admin: ' + (e?.message || ''));
-    }
-  }
-
-  function loginDirecto() {
-    // Validación directa para benet.andujar@insbitacola.cat
-    setToken('benet.andujar@insbitacola.cat');
-    try { toastSuccess('Login directo realizado'); } catch {}
-    location.href = '/dashboard';
-  }
+  // Funciones inseguras eliminadas - Solo Google OAuth
 </script>
 
 <svelte:head>
@@ -107,16 +82,7 @@
         <div id="gsi-btn" class="gsi-button"></div>
       </div>
       
-      <!-- Login Directo -->
-      <div class="direct-login">
-        <button 
-          onclick={loginDirecto}
-          class="direct-login-btn"
-        >
-          <Icon name="log-in" size={16} />
-          Login Directo (benet.andujar@insbitacola.cat)
-        </button>
-      </div>
+      <!-- Solo Google OAuth - Login directo eliminado -->
       
       <!-- Estado de carga -->
       {#if token}
@@ -126,32 +92,7 @@
         </div>
       {/if}
       
-      <!-- Sección de desarrollo -->
-      {#if showDev}
-        <div class="dev-section">
-          <div class="dev-header">
-            <Icon name="settings" size={16} />
-            <span>Desarrollo</span>
-          </div>
-          <div class="dev-form">
-            <div class="input-group">
-              <label>Forçar admin (dev)</label>
-              <input 
-                bind:value={seedEmail}
-                placeholder="email@insbitacola.cat"
-                class="input"
-              />
-            </div>
-            <button 
-              onclick={forceAdmin}
-              class="btn-secondary"
-            >
-              <Icon name="plus" size={16} />
-              Forçar admin
-            </button>
-          </div>
-        </div>
-      {/if}
+      <!-- Sección de desarrollo eliminada - Solo Google OAuth -->
     </div>
   </div>
 </main>
@@ -254,14 +195,7 @@
     justify-content: center;
   }
   
-  .direct-login {
-    margin-bottom: 1.5rem;
-  }
-  
-  .direct-login-btn {
-    width: 100%;
-    justify-content: center;
-  }
+  /* Estilos de login directo eliminados */
   
   .login-status {
     display: flex;
@@ -276,27 +210,7 @@
     font-weight: 500;
   }
   
-  .dev-section {
-    margin-top: 2rem;
-    padding-top: 1.5rem;
-    border-top: 1px solid var(--border);
-  }
-  
-  .dev-header {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-    font-size: var(--text-sm);
-    font-weight: 600;
-    color: var(--fg-secondary);
-  }
-  
-  .dev-form {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
+  /* Estilos de desarrollo eliminados */
   
   /* Animaciones */
   .login-card {

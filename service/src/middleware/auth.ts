@@ -22,17 +22,7 @@ declare global {
 
 export function requireAuth() {
   return async (req: Request, res: Response, next: NextFunction) => {
-    if (process.env.DISABLE_AUTH === '1') {
-      req.user = { email: 'benet.andujar@insbitacola.cat', role: 'admin' };
-      return next();
-    }
-    
-    // Validación directa para benet.andujar@insbitacola.cat
-    const authHeader = req.headers.authorization;
-    if (authHeader === 'Bearer benet.andujar@insbitacola.cat') {
-      req.user = { email: 'benet.andujar@insbitacola.cat', role: 'admin' };
-      return next();
-    }
+    // Solo autenticación a través de Google OAuth
     try {
       const idToken = (req.headers['x-id-token'] || req.headers.authorization || '').toString().replace('Bearer ', '');
       if (!idToken) return res.status(403).json({ error: 'Permís denegat' });
@@ -60,6 +50,13 @@ export function requireAuth() {
 export function requireRole(roles: Array<'docent' | 'admin'>) {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) return res.status(403).json({ error: 'Permís denegat' });
+    
+    // Los administradores tienen acceso a todo
+    if (req.user.role === 'admin') {
+      return next();
+    }
+    
+    // Los docentes solo tienen acceso a las rutas específicas de docente
     if (!roles.includes(req.user.role)) return res.status(403).json({ error: 'Permís denegat' });
     next();
   };

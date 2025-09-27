@@ -4,37 +4,7 @@ import { getAnyActual, query } from '../db.js';
 
 const router = Router();
 
-// Endpoint temporal de desarrollo para diagnosticar alumnos
-router.get('/dev', async (req: Request, res: Response) => {
-  const anyCursParam = (req.query.anyCurs as string) || undefined;
-  const anyCurs = anyCursParam || (await getAnyActual());
-  if (!anyCurs) return res.json([]);
-
-  const r = await query<{
-    id: string;
-    nom: string;
-    grup: string | null;
-    any_curs: string;
-    estat: 'alta' | 'baixa' | 'migrat';
-  }>(
-    `SELECT a.alumne_id AS id, a.nom, g.nom AS grup, ac.any_curs, ac.estat
-     FROM alumnes a
-     JOIN alumnes_curs ac ON ac.alumne_id = a.alumne_id
-     LEFT JOIN grups g ON g.grup_id = ac.grup_id
-     WHERE ac.any_curs = $1`,
-    [anyCurs]
-  );
-
-  const items = r.rows.map((row) => ({ 
-    id: row.id, 
-    nom: row.nom, 
-    grup: row.grup || '', 
-    anyCurs: row.any_curs, 
-    estat: row.estat 
-  }));
-
-  res.json({ total: r.rows.length, anyCurs, items });
-});
+// Endpoint de desarrollo eliminado por seguridad
 
 router.use(requireAuth());
 

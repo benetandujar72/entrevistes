@@ -12,6 +12,7 @@ import admin from './routes/admin.js';
 import consolidacion from './routes/consolidacion.js';
 import dadesPersonals from './routes/dades-personals.js';
 import emails from './routes/emails.js';
+import importComplet from './routes/import-complet.js';
 
 export function createApp() {
   const app = express();
@@ -40,6 +41,7 @@ export function createApp() {
   app.use('/usuaris', usuaris);
   app.use('/tutors', tutors);
   app.use('/import', importer);
+  app.use('/import-complet', importComplet);
   app.use('/sheets', sheetsDiag);
   app.use('/admin', admin);
   app.use('/consolidacion', consolidacion);
@@ -50,8 +52,8 @@ export function createApp() {
   // Endpoint para verificar estado de autenticación
   app.get('/api/auth/status', (_req, res) => {
     res.json({ 
-      authDisabled: process.env.DISABLE_AUTH === '1',
-      message: process.env.DISABLE_AUTH === '1' ? 'Autenticación deshabilitada' : 'Autenticación habilitada'
+      authDisabled: false,
+      message: 'Autenticación habilitada - Solo Google OAuth'
     });
   });
 

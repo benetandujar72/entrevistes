@@ -24,6 +24,13 @@
   let activeEntrevistesTab = '';
   let entrevistesPreviewLoading = false;
 
+  // Variables para importación completa
+  let csvFile: FileList | null = null;
+  let importCompleteLoading = false;
+  let importProgress = 0;
+  let importStatus = '';
+  let importDetails = '';
+
   function save() {
     saveConfigSpreadsheets({
       '1r': (cfg['1r'] || '').trim(),
@@ -223,6 +230,78 @@
   function getTabEntrevistes(tabName: string) {
     const tab = entrevistesTabsPreview.find(t => t.tabName === tabName);
     return tab ? tab.entrevistes : [];
+  }
+
+  // Nueva funcionalidad: Importación completa desde CSV
+  async function importarDadesComplets(event: Event) {
+    event.preventDefault();
+    if (!csvFile || csvFile.length === 0) {
+      msg = 'Selecciona un fitxer CSV';
+      try { toastError(msg); } catch {}
+      return;
+    }
+
+    msg = ''; 
+    importCompleteLoading = true;
+    importProgress = 0;
+    importStatus = 'Iniciant importació...';
+    importDetails = '';
+
+    try {
+      const formData = new FormData();
+      formData.append('csv', csvFile[0]);
+      formData.append('anyCurs', anyCurs || '2025-2026');
+
+      // Simular progreso durante la importación
+      const progressInterval = setInterval(() => {
+        if (importProgress < 90) {
+          importProgress += Math.random() * 10;
+          importStatus = `Processant dades... ${Math.round(importProgress)}%`;
+        }
+      }, 500);
+
+      const r = await fetch('http://localhost:8081/import-complet/dades-complets', {
+        method: 'POST',
+        headers: { ...authHeaders() },
+        body: formData
+      });
+
+      clearInterval(progressInterval);
+      importProgress = 100;
+      importStatus = 'Finalitzant importació...';
+
+      const data = await r.json();
+      if (!r.ok) throw new Error(data?.error || 'Error important dades completes');
+
+      const alumnes = data.alumnes || 0;
+      const grups = data.grups || 0;
+      const tutores = data.tutores || 0;
+      const entrevistes = data.entrevistes || 0;
+      const errores = data.errores || 0;
+
+      importStatus = 'Importació completada!';
+      importDetails = `${alumnes} alumnes, ${grups} grups, ${tutores} tutores, ${entrevistes} entrevistes${errores > 0 ? `, ${errores} errors` : ''}`;
+      
+      msg = `Importació completada: ${alumnes} alumnes, ${grups} grups, ${tutores} tutores, ${entrevistes} entrevistes`;
+      try { toastSuccess(msg); } catch {}
+      
+    } catch (e: any) {
+      importProgress = 0;
+      importStatus = 'Error en la importació';
+      importDetails = e?.message || 'Error important dades completes';
+      msg = e?.message || 'Error important dades completes';
+      try { toastError(msg); } catch {}
+    } finally { 
+      importCompleteLoading = false;
+      csvFile = null;
+      
+      // Limpiar progreso después de 3 segundos
+      setTimeout(() => {
+        importProgress = 0;
+        importStatus = '';
+        importDetails = '';
+      }, 3000);
+    }
   }
 </script>
 
@@ -581,10 +660,67 @@
       </div>
     {/if}
   </div>
+
+  <!-- Nueva sección: Importación completa -->
+  <div class="config-section">
+    <div class="section-header">
+      <Icon name="upload" size={20} />
+      <h2>Importació Completa</h2>
+    </div>
+    
+    <div class="import-complete-controls">
+      <div class="form-group">
+        <label for="csv-file" class="form-label">Fitxer CSV amb dades completes</label>
+        <input 
+          id="csv-file"
+          type="file" 
+          accept=".csv" 
+          bind:files={csvFile}
+          class="form-input"
+          required
+        />
+        <small class="form-help">
+          Format esperat: #,Sexe,Grup,Alumn@,grup-alumne,tutor personal,mail t.p.,mail@edu,Email alumnat,RALC,Doc. Identitat,TIS,Data de naixement,Municipi de naixement,Nacionalitat,Adreça,"Municipi de  residència",CP,Tutor 1,Telèfon ,email tutor 1,Tutor 2,Telèfon,email tutor 2,link fotografia
+        </small>
+      </div>
+      
+      <button 
+        onclick={importarDadesComplets} 
+        disabled={importCompleteLoading || !csvFile} 
+        class="btn btn-filled-primary"
+      >
+        <Icon name="upload" size={16} />
+        {importCompleteLoading ? 'Important...' : 'Importar Dades Complets'}
+      </button>
+      
+      <!-- Barra de progreso -->
+      {#if importCompleteLoading || importProgress > 0}
+        <div class="progress-container">
+          <div class="progress-header">
+            <span class="progress-status">{importStatus}</span>
+            <span class="progress-percentage">{Math.round(importProgress)}%</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: {importProgress}%"></div>
+          </div>
+          {#if importDetails}
+            <div class="progress-details">{importDetails}</div>
+          {/if}
+        </div>
+      {/if}
+      
+      {#if msg && msg.includes('Importació completada')}
+        <div class="success-message">
+          <Icon name="check-circle" size={16} />
+          <span>{msg}</span>
+        </div>
+      {/if}
+    </div>
+  </div>
 </div>
 
 
-{#if importing || previewLoading || entrevistesPreviewLoading}
+{#if importing || previewLoading || entrevistesPreviewLoading || importCompleteLoading}
   <div aria-busy="true" class="loading-overlay">
     <div class="loading-card">
       <div class="loading-spinner"></div>
@@ -849,6 +985,92 @@
   .entrevistas-grid {
     display: grid;
     gap: 0.75rem;
+  }
+
+  /* === IMPORT COMPLETE CONTROLS === */
+  .import-complete-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .form-help {
+    display: block;
+    margin-top: 0.5rem;
+    font-size: var(--text-xs);
+    color: var(--google-grey-500);
+    line-height: 1.4;
+  }
+
+  /* === PROGRESS BAR === */
+  .progress-container {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: var(--google-grey-50);
+    border: 1px solid var(--google-grey-200);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--card-shadow);
+  }
+
+  .progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+  }
+
+  .progress-status {
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--fg);
+  }
+
+  .progress-percentage {
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--primary-600);
+  }
+
+  .progress-bar {
+    width: 100%;
+    height: 8px;
+    background: var(--google-grey-200);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 0.75rem;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary-500), var(--primary-600));
+    border-radius: 4px;
+    transition: width 0.3s ease;
+    position: relative;
+  }
+
+  .progress-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    animation: shimmer 2s infinite;
+  }
+
+  .progress-details {
+    font-size: var(--text-xs);
+    color: var(--google-grey-600);
+    text-align: center;
+    padding: 0.5rem;
+    background: var(--google-grey-100);
+    border-radius: var(--radius-md);
+  }
+
+  @keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
   }
 
   /* === ENTREVISTES TABS PREVIEW === */

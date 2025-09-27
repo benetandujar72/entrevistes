@@ -119,84 +119,68 @@
                 doc_identitat: values[10],
                 tis: values[11],
                 ralc: values[9],
-                link_fotografia: values[25] || null, // "link fotografia" (columna 26)
-                // Tutor personal (profesor asignado)
-                tutor_personal_nom: values[6], // "tutor personal" (columna F)
-                tutor_personal_email: values[7], // "mail t.p." (columna G)
+                link_fotografia: values[24] || null, // "link fotografia" (columna 25)
+                // Tutor personal (profesor asignado) - Columnas 7 y 8 (índices 6 y 7)
+                tutor_personal_nom: values[6], // "tutor personal" (columna 7)
+                tutor_personal_email: values[7], // "mail t.p." (columna 8)
                 
-                // Tutor 1 (padre/madre)
-                tutor1_nom: values[19], // "Tutor 1" (columna 20)
-                tutor1_tel: values[20], // "Telèfon " (columna 21)
-                tutor1_email: values[21], // "email tutor 1" (columna 22)
+                // Tutor 1 (padre/madre) - Columnas 19, 20, 21 (índices 18, 19, 20)
+                tutor1_nom: values[18], // "Tutor 1" (columna 19)
+                tutor1_tel: values[19], // "Telèfon " (columna 20)
+                tutor1_email: values[20], // "email tutor 1" (columna 21)
                 
-                // Tutor 2 (padre/madre)
-                tutor2_nom: values[22], // "Tutor 2" (columna 23)
-                tutor2_tel: values[23], // "Telèfon" (columna 24)
-                tutor2_email: values[24] // "email tutor 2" (columna 25)
+                // Tutor 2 (padre/madre) - Columnas 22, 23, 24 (índices 21, 22, 23)
+                tutor2_nom: values[21], // "Tutor 2" (columna 22)
+                tutor2_tel: values[22], // "Telèfon" (columna 23)
+                tutor2_email: values[23] // "email tutor 2" (columna 24)
               };
 
-              // Buscar alumno por email
-              const response = await fetch(`http://localhost:8081/alumnes-db/dev?anyCurs=2025-2026`, {
-                headers: {
-                  'Authorization': `Bearer ${token}`
-                }
-              });
-              
-              if (!response.ok) {
-                throw new Error(`Error obteniendo alumnos: ${response.status}`);
-              }
-              
-              const alumnosData = await response.json();
-              const alumno = alumnosData.items.find((a: any) => a.nom === dato.alumne_nom);
+              // Crear alumno directamente (no buscar si existe)
+              console.log(`📝 Creando alumno: ${dato.alumne_nom}`);
 
-              if (!alumno) {
-                errores++;
-                erroresDetalle.push(`${dato.alumne_nom}: No encontrado en la base de datos`);
-                continue;
-              }
-
-              // Crear personal_id único
+              // Crear IDs únicos
+              const alumneId = `alumne_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
               const personalId = `pf_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-              // Importar datos personales
-              const importResponse = await fetch('http://localhost:8081/dades-personals/import', {
+              // Usar endpoint para crear alumno individual
+              const importResponse = await fetch('http://localhost:8081/import-complet/alumne-individual', {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
                   'Authorization': `Bearer ${getToken()}`
                 },
                 body: JSON.stringify({
+                  alumne_id: alumneId,
                   personal_id: personalId,
                   alumne_nom: dato.alumne_nom,
-                  alumne_email: dato.alumne_email,
+                  email_alumnat: dato.alumne_email,
                   sexe: dato.sexe,
                   data_naixement: dato.data_naixement,
                   municipi_naixement: dato.municipi_naixement,
                   nacionalitat: dato.nacionalitat,
                   adreca: dato.adreca,
                   municipi_residencia: dato.municipi_residencia,
-                  codi_postal: dato.codi_postal,
+                  cp: dato.codi_postal,
                   doc_identitat: dato.doc_identitat,
                   tis: dato.tis,
                   ralc: dato.ralc,
                   link_fotografia: dato.link_fotografia,
-                  // Tutor personal (profesor asignado)
                   tutor_personal_nom: dato.tutor_personal_nom,
                   tutor_personal_email: dato.tutor_personal_email,
-                  // Tutor 1 (padre/madre)
                   tutor1_nom: dato.tutor1_nom,
                   tutor1_tel: dato.tutor1_tel,
                   tutor1_email: dato.tutor1_email,
-                  // Tutor 2 (padre/madre)
                   tutor2_nom: dato.tutor2_nom,
                   tutor2_tel: dato.tutor2_tel,
-                  tutor2_email: dato.tutor2_email
+                  tutor2_email: dato.tutor2_email,
+                  grup: dato.grup || '1r ESO', // Grupo por defecto
+                  anyCurs: '2025-2026'
                 })
               });
 
               if (importResponse.ok) {
                 importados++;
-                console.log(`✅ ${dato.alumne_nom} - Datos personales importados`);
+                console.log(`✅ ${dato.alumne_nom} - Alumno creado e importado correctamente`);
               } else {
                 errores++;
                 const errorData = await importResponse.text();

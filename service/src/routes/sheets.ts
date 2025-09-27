@@ -3,10 +3,8 @@ import { createSheetsClient } from '../sheets/client.js';
 import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
-// Permitir diagnóstico sin auth cuando DISABLE_AUTH=1 (útil en desarrollo)
-if (process.env.DISABLE_AUTH !== '1') {
-  router.use(requireAuth());
-}
+// Requerir autenticación para todas las rutas de sheets
+router.use(requireAuth());
 
 router.get('/diagnostic', async (req: Request, res: Response) => {
   const spreadsheetId = (req.query.spreadsheetId as string || '').trim();

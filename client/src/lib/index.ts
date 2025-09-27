@@ -248,11 +248,10 @@ export async function fetchAlumnes(): Promise<Alumne[]> {
 
 export async function fetchAlumnesDb(params?: { anyCurs?: string }): Promise<Alumne[]> {
   const qs = params?.anyCurs ? `?anyCurs=${encodeURIComponent(params.anyCurs)}` : '';
-  // Temporal: usar endpoint de desarrollo sin autenticación
-  const res = await fetch(`${BASE}/alumnes-db/dev${qs}`);
+  const res = await fetch(`${BASE}/alumnes-db${qs}`, { headers: authHeaders() });
   if (!res.ok) throw new Error('Error carregant alumnes (BD)');
   const data = await res.json();
-  return data.items || [];
+  return Array.isArray(data) ? data : [];
 }
 
 export async function fetchHealth(): Promise<{ status: string }> {

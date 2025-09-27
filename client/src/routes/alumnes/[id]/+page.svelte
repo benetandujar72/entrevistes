@@ -65,6 +65,9 @@
     try {
       loadingDades = true;
       dadesPersonals = await obtenirDadesPersonals(alumneId);
+      console.log('Dades personals cargades:', dadesPersonals);
+      console.log('Tutor personal email:', dadesPersonals?.tutor_personal_email);
+      console.log('Tutor personal nom:', dadesPersonals?.tutor_personal_nom);
     } catch (e: any) {
       error = e?.message || 'Error carregant dades';
       toastError(error);
@@ -247,20 +250,20 @@
           <div class="alumne-details">
             <span class="detail-item">
               <Icon name="mail" size={14} /> 
-              <a href="mailto:{dadesPersonals.alumne_email}" class="email-link">
+              <a href="mailto:{dadesPersonals.alumne_email || ''}?subject=Contacto desde Entrevistes App" class="email-link">
                 {dadesPersonals.alumne_email || 'No disponible'}
               </a>
             </span>
             <span class="detail-item">
               <Icon name="user" size={14} /> 
-              <a href="mailto:{dadesPersonals.tutor_email}" class="email-link">
+              <a href="mailto:{dadesPersonals.tutor_email || ''}?subject=Contacto desde Entrevistes App" class="email-link">
                 {dadesPersonals.tutor_email}
               </a>
             </span>
             {#if dadesPersonals.tutor_personal_email}
               <span class="detail-item">
                 <Icon name="graduation-cap" size={14} /> 
-                <a href="mailto:{dadesPersonals.tutor_personal_email}" class="email-link">
+                <a href="mailto:{dadesPersonals.tutor_personal_email}?subject=Contacto desde Entrevistes App" class="email-link">
                   {dadesPersonals.tutor_personal_nom} ({dadesPersonals.tutor_personal_email})
                 </a>
               </span>
@@ -1213,20 +1216,41 @@
     font-size: 1.1rem;
   }
 
-  /* Email links */
-  .email-link {
+  /* Email links - Solo en header */
+  .header .email-link {
+    color: #ffffff !important;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s ease;
+    background-color: rgba(255, 255, 255, 0.2);
+    padding: 4px 8px;
+    border-radius: 4px;
+  }
+
+  .header .email-link:hover {
+    color: #ffffff !important;
+    text-decoration: underline;
+    background-color: rgba(255, 255, 255, 0.3);
+  }
+
+  .header .email-link:visited {
+    color: #ffffff !important;
+  }
+
+  /* Email links - En cards (fondo blanco) */
+  .card-content .email-link {
     color: #1976d2;
     text-decoration: none;
     font-weight: 500;
     transition: color 0.2s ease;
   }
 
-  .email-link:hover {
+  .card-content .email-link:hover {
     color: #1565c0;
     text-decoration: underline;
   }
 
-  .email-link:visited {
+  .card-content .email-link:visited {
     color: #7b1fa2;
   }
 

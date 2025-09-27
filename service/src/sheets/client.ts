@@ -21,11 +21,9 @@ function loadServiceAccount(): { client_email: string; private_key: string } | n
   // 2) JSON en texto (posible base64)
   const raw = (process.env.GOOGLE_SERVICE_ACCOUNT_JSON || '').trim();
   if (!raw) {
-    // En desarrollo local, permitir que no haya credenciales
-    if (process.env.NODE_ENV === 'development' || process.env.DISABLE_AUTH === '1') {
-      console.log('Advertencia: No hay credenciales de Google Sheets configuradas. Funcionalidad limitada.');
-      return null;
-    }
+    // Requerir credenciales de Google Sheets
+    console.log('Error: No hay credenciales de Google Sheets configuradas.');
+    throw new Error('Credenciales de Google Sheets requeridas');
     throw new Error(
       'Faltan credenciales: define GOOGLE_CLIENT_EMAIL y GOOGLE_PRIVATE_KEY, o GOOGLE_SERVICE_ACCOUNT_JSON'
     );
