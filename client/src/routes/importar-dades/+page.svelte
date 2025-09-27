@@ -137,6 +137,20 @@
 
               // Crear alumno directamente (no buscar si existe)
               console.log(`📝 Creando alumno: ${dato.alumne_nom}`);
+              console.log(`🔍 Debug datos tutor personal:`, {
+                nom: dato.tutor_personal_nom,
+                email: dato.tutor_personal_email
+              });
+              console.log(`🔍 Debug datos tutor1:`, {
+                nom: dato.tutor1_nom,
+                tel: dato.tutor1_tel,
+                email: dato.tutor1_email
+              });
+              console.log(`🔍 Debug datos tutor2:`, {
+                nom: dato.tutor2_nom,
+                tel: dato.tutor2_tel,
+                email: dato.tutor2_email
+              });
 
               // Crear IDs únicos
               const alumneId = `alumne_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;

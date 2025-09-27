@@ -345,6 +345,21 @@ router.post('/alumne-individual', requireAuth(), async (req: Request, res: Respo
       ON CONFLICT (grup_id) DO NOTHING
     `, [grupId, anyCurs, cursoDelGrupo, grup]);
 
+    // Verificar si el alumno ya existe por email
+    const alumneExistente = await query('SELECT alumne_id, personal_id FROM alumnes WHERE email = $1', [email_alumnat]);
+    
+    let alumneIdFinal = alumne_id;
+    let personalIdFinal = personal_id;
+    
+    if (alumneExistente.rows.length > 0) {
+      // Alumno ya existe, usar IDs existentes
+      alumneIdFinal = alumneExistente.rows[0].alumne_id;
+      personalIdFinal = alumneExistente.rows[0].personal_id;
+      console.log(`🔄 Actualizando alumno existente: ${alumne_nom} (${email_alumnat})`);
+    } else {
+      console.log(`➕ Creando nuevo alumno: ${alumne_nom} (${email_alumnat})`);
+    }
+
     // Insertar/actualizar datos personales
     await query(`
       INSERT INTO pf (
@@ -378,7 +393,7 @@ router.post('/alumne-individual', requireAuth(), async (req: Request, res: Respo
         tutor2_email = EXCLUDED.tutor2_email,
         updated_at = NOW()
     `, [
-      personal_id, sexe, dataNaixement, municipi_naixement, nacionalitat,
+      personalIdFinal, sexe, dataNaixement, municipi_naixement, nacionalitat,
       adreca, municipi_residencia, cp, doc_identitat, tis, ralc,
       link_fotografia, tutor_personal_nom, tutor_personal_email,
       tutor1_nom, tutor1_tel, tutor1_email, tutor2_nom, tutor2_tel, tutor2_email
@@ -393,7 +408,7 @@ router.post('/alumne-individual', requireAuth(), async (req: Request, res: Respo
         email = EXCLUDED.email,
         personal_id = EXCLUDED.personal_id,
         updated_at = NOW()
-    `, [alumne_id, alumne_nom, email_alumnat, personal_id]);
+    `, [alumneIdFinal, alumne_nom, email_alumnat, personalIdFinal]);
 
     // Asignar/actualizar alumno a grupo
     const alumnesCursId = `ac_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -404,7 +419,7 @@ router.post('/alumne-individual', requireAuth(), async (req: Request, res: Respo
         grup_id = EXCLUDED.grup_id,
         estat = EXCLUDED.estat,
         updated_at = NOW()
-    `, [alumnesCursId, alumne_id, grupId, anyCurs, 'alta']);
+    `, [alumnesCursId, alumneIdFinal, grupId, anyCurs, 'alta']);
 
     // Crear/actualizar tutor académico si existe
     if (tutor_personal_email) {
@@ -429,7 +444,7 @@ router.post('/alumne-individual', requireAuth(), async (req: Request, res: Respo
           INSERT INTO tutories_alumne (alumne_id, tutor_email, any_curs)
           VALUES ($1, $2, $3)
           ON CONFLICT (alumne_id, any_curs) DO UPDATE SET tutor_email = EXCLUDED.tutor_email
-        `, [alumne_id, tutor_personal_email, anyCurs]);
+        `, [alumneIdFinal, tutor_personal_email, anyCurs]);
         console.log(`✅ Tutor asignado: ${tutor_personal_email} → ${alumne_nom}`);
         
       } catch (error) {
