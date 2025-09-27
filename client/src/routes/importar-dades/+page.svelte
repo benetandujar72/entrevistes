@@ -122,8 +122,8 @@
                 ralc: values[9],
                 link_fotografia: values[24] || null, // "link fotografia" (columna 25)
                 // Tutor personal (profesor asignado) - Columnas 7 y 8 (índices 6 y 7)
-                tutor_personal_nom: values[6], // "tutor personal" (columna 7)
-                tutor_personal_email: values[7], // "mail t.p." (columna 8)
+                tutor_personal_nom: values[5], // "tutor personal" (columna 6)
+                tutor_personal_email: values[6], // "mail t.p." (columna 7)
                 
                 // Tutor 1 (padre/madre) - Columnas 19, 20, 21 (índices 18, 19, 20)
                 tutor1_nom: values[18], // "Tutor 1" (columna 19)
@@ -139,6 +139,9 @@
               // Crear alumno directamente (no buscar si existe)
               console.log(`📝 Creando alumno: ${dato.alumne_nom}`);
               console.log(`🔍 Debug grupo asignado:`, dato.grup);
+              console.log(`🔍 Debug valores CSV:`, values.slice(0, 10)); // Primeras 10 columnas
+              console.log(`🔍 Debug tutor personal - índice 5:`, values[5]);
+              console.log(`🔍 Debug tutor personal - índice 6:`, values[6]);
               console.log(`🔍 Debug datos tutor personal:`, {
                 nom: dato.tutor_personal_nom,
                 email: dato.tutor_personal_email
