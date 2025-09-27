@@ -97,7 +97,7 @@
     background: var(--card-bg);
     border: 1px solid var(--card-border);
     border-radius: var(--radius-lg);
-    padding: 1.5rem;
+    padding: 1.5rem 1.5rem 2rem 1.5rem; /* Más padding inferior */
     margin-bottom: 1.5rem;
     box-shadow: var(--shadow-sm);
   }
@@ -129,14 +129,15 @@
   .filters-row {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-    align-items: end;
+    gap: 1.5rem; /* Más espacio entre campos */
+    align-items: start; /* Alinear al inicio para evitar problemas de altura */
   }
 
   .filter-field {
     display: flex;
     flex-direction: column;
     min-width: 0; /* Permite que el campo se contraiga */
+    min-height: 80px; /* Altura mínima para evitar solapamiento */
   }
 
   .filter-field.search-field {
@@ -147,8 +148,9 @@
     font-size: var(--text-sm);
     font-weight: 500;
     color: var(--fg-secondary);
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.75rem; /* Más espacio entre label y input */
     display: block;
+    line-height: 1.2;
   }
 
   .filter-select {
@@ -176,15 +178,19 @@
   @media (max-width: 768px) {
     .filters-row {
       grid-template-columns: 1fr;
-      gap: 0.75rem;
+      gap: 1rem; /* Mantener espacio adecuado en móvil */
     }
     
     .filter-field.search-field {
       grid-column: 1;
     }
     
+    .filter-field {
+      min-height: 70px; /* Altura mínima reducida en móvil */
+    }
+    
     .filter-bar {
-      padding: 1rem;
+      padding: 1rem 1rem 1.5rem 1rem; /* Padding ajustado para móvil */
     }
   }
 
