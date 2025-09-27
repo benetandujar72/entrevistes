@@ -275,6 +275,7 @@ router.post('/dades-complets', upload.single('csv'), async (req: any, res: Respo
 router.post('/alumne-individual', requireAuth(), async (req: Request, res: Response) => {
   try {
     console.log(`📝 Creando alumno individual: ${req.body.alumne_nom}`);
+    console.log(`🔍 Grupo recibido del frontend:`, req.body.grup);
     
     const {
       alumne_id,

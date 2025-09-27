@@ -110,6 +110,7 @@
                 alumne_nom: values[3],
                 alumne_email: values[8],
                 sexe: values[1] === 'H' ? 'H' : values[1] === 'D' ? 'D' : 'X',
+                grup: values[2], // Grupo del CSV (columna 3)
                 data_naixement: convertirFecha(values[12]),
                 municipi_naixement: values[13],
                 nacionalitat: values[14],
@@ -137,6 +138,7 @@
 
               // Crear alumno directamente (no buscar si existe)
               console.log(`📝 Creando alumno: ${dato.alumne_nom}`);
+              console.log(`🔍 Debug grupo asignado:`, dato.grup);
               console.log(`🔍 Debug datos tutor personal:`, {
                 nom: dato.tutor_personal_nom,
                 email: dato.tutor_personal_email
