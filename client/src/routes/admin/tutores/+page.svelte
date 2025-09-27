@@ -11,6 +11,34 @@
   let cargandoAlumnes = false;
   let error: string | null = null;
 
+  // Función para debuggear clics en enlaces de email
+  function handleEmailClick(event: MouseEvent) {
+    console.log('🔍 DEBUG: Clic en enlace de email detectado');
+    console.log('🔍 DEBUG: Evento:', event);
+    console.log('🔍 DEBUG: Target:', event.target);
+    console.log('🔍 DEBUG: Current Target:', event.currentTarget);
+    
+    const link = event.currentTarget as HTMLAnchorElement;
+    console.log('🔍 DEBUG: Href del enlace:', link.href);
+    console.log('🔍 DEBUG: Protocolo:', link.protocol);
+    console.log('🔍 DEBUG: Navegador:', navigator.userAgent);
+    
+    // Verificar si el navegador soporta mailto
+    if (link.protocol === 'mailto:') {
+      console.log('✅ DEBUG: Protocolo mailto detectado correctamente');
+    } else {
+      console.log('❌ DEBUG: Problema con el protocolo mailto');
+    }
+    
+    // Intentar abrir el enlace manualmente si es necesario
+    try {
+      window.open(link.href, '_blank');
+      console.log('✅ DEBUG: window.open ejecutado');
+    } catch (error) {
+      console.log('❌ DEBUG: Error en window.open:', error);
+    }
+  }
+
   onMount(async () => {
     await cargarTutores();
   });
@@ -169,7 +197,7 @@
                   <div class="detail-item">
                     <Icon name="mail" size={14} />
                     <span><strong>Email:</strong> 
-                      <a href="mailto:{alumne.email}" class="email-link">
+                      <a href="mailto:{alumne.email}?subject=Contacte des de l'App d'Entrevistes&body=Hola,%0D%0A%0D%0AEm contacte des de l'aplicació d'entrevistes per parlar sobre {alumne.nom}.%0D%0A%0D%0AGràcies." class="email-link" target="_blank" rel="noopener noreferrer" onclick={handleEmailClick}>
                         {alumne.email}
                       </a>
                     </span>

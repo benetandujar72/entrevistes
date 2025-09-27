@@ -38,6 +38,34 @@
   let loadingCita = false;
   let loadingSolicitut = false;
 
+  // Función para debuggear clics en enlaces de email
+  function handleEmailClick(event: MouseEvent) {
+    console.log('🔍 DEBUG: Clic en enlace de email detectado');
+    console.log('🔍 DEBUG: Evento:', event);
+    console.log('🔍 DEBUG: Target:', event.target);
+    console.log('🔍 DEBUG: Current Target:', event.currentTarget);
+    
+    const link = event.currentTarget as HTMLAnchorElement;
+    console.log('🔍 DEBUG: Href del enlace:', link.href);
+    console.log('🔍 DEBUG: Protocolo:', link.protocol);
+    console.log('🔍 DEBUG: Navegador:', navigator.userAgent);
+    
+    // Verificar si el navegador soporta mailto
+    if (link.protocol === 'mailto:') {
+      console.log('✅ DEBUG: Protocolo mailto detectado correctamente');
+    } else {
+      console.log('❌ DEBUG: Problema con el protocolo mailto');
+    }
+    
+    // Intentar abrir el enlace manualmente si es necesario
+    try {
+      window.open(link.href, '_blank');
+      console.log('✅ DEBUG: window.open ejecutado');
+    } catch (error) {
+      console.log('❌ DEBUG: Error en window.open:', error);
+    }
+  }
+
   // Formulario para nueva cita
   let citaForm = {
     data_cita: '',
@@ -250,20 +278,20 @@
           <div class="alumne-details">
             <span class="detail-item">
               <Icon name="mail" size={14} /> 
-              <a href="mailto:{dadesPersonals.alumne_email || ''}?subject=Contacto desde Entrevistes App" class="email-link">
+              <a href="mailto:{dadesPersonals.alumne_email || ''}?subject=Contacte des de l'App d'Entrevistes&body=Hola {dadesPersonals.alumne_nom},%0D%0A%0D%0AEm contacte des de l'aplicació d'entrevistes.%0D%0A%0D%0AGràcies." class="email-link" target="_blank" rel="noopener noreferrer" onclick={handleEmailClick}>
                 {dadesPersonals.alumne_email || 'No disponible'}
               </a>
             </span>
             <span class="detail-item">
               <Icon name="user" size={14} /> 
-              <a href="mailto:{dadesPersonals.tutor_email || ''}?subject=Contacto desde Entrevistes App" class="email-link">
+              <a href="mailto:{dadesPersonals.tutor_email || ''}?subject=Contacte des de l'App d'Entrevistes&body=Hola,%0D%0A%0D%0AEm contacte des de l'aplicació d'entrevistes per parlar sobre {dadesPersonals.alumne_nom}.%0D%0A%0D%0AGràcies." class="email-link" target="_blank" rel="noopener noreferrer" onclick={handleEmailClick}>
                 {dadesPersonals.tutor_email}
               </a>
             </span>
             {#if dadesPersonals.tutor_personal_email}
               <span class="detail-item">
                 <Icon name="graduation-cap" size={14} /> 
-                <a href="mailto:{dadesPersonals.tutor_personal_email}?subject=Contacto desde Entrevistes App" class="email-link">
+                <a href="mailto:{dadesPersonals.tutor_personal_email}?subject=Contacte des de l'App d'Entrevistes&body=Hola,%0D%0A%0D%0AEm contacte des de l'aplicació d'entrevistes per parlar sobre {dadesPersonals.alumne_nom}.%0D%0A%0D%0AGràcies." class="email-link" target="_blank" rel="noopener noreferrer" onclick={handleEmailClick}>
                   {dadesPersonals.tutor_personal_nom} ({dadesPersonals.tutor_personal_email})
                 </a>
               </span>
@@ -389,7 +417,7 @@
                       <span class="label">Email:</span>
                       <span class="value">
                         {#if dadesPersonals.tutor_personal_email}
-                          <a href="mailto:{dadesPersonals.tutor_personal_email}" class="email-link">
+                          <a href="mailto:{dadesPersonals.tutor_personal_email}?subject=Contacte des de l'App d'Entrevistes&body=Hola,%0D%0A%0D%0AEm contacte des de l'aplicació d'entrevistes per parlar sobre {dadesPersonals.alumne_nom}.%0D%0A%0D%0AGràcies." class="email-link" target="_blank" rel="noopener noreferrer" onclick={handleEmailClick}>
                             {dadesPersonals.tutor_personal_email}
                           </a>
                         {:else}
@@ -415,7 +443,7 @@
                       <span class="label">Email:</span>
                       <span class="value">
                         {#if dadesPersonals.tutor1_email}
-                          <a href="mailto:{dadesPersonals.tutor1_email}" class="email-link">
+                          <a href="mailto:{dadesPersonals.tutor1_email}?subject=Contacte des de l'App d'Entrevistes&body=Hola,%0D%0A%0D%0AEm contacte des de l'aplicació d'entrevistes per parlar sobre {dadesPersonals.alumne_nom}.%0D%0A%0D%0AGràcies." class="email-link" target="_blank" rel="noopener noreferrer" onclick={handleEmailClick}>
                             {dadesPersonals.tutor1_email}
                           </a>
                         {:else}
@@ -441,7 +469,7 @@
                       <span class="label">Email:</span>
                       <span class="value">
                         {#if dadesPersonals.tutor2_email}
-                          <a href="mailto:{dadesPersonals.tutor2_email}" class="email-link">
+                          <a href="mailto:{dadesPersonals.tutor2_email}?subject=Contacte des de l'App d'Entrevistes&body=Hola,%0D%0A%0D%0AEm contacte des de l'aplicació d'entrevistes per parlar sobre {dadesPersonals.alumne_nom}.%0D%0A%0D%0AGràcies." class="email-link" target="_blank" rel="noopener noreferrer" onclick={handleEmailClick}>
                             {dadesPersonals.tutor2_email}
                           </a>
                         {:else}
