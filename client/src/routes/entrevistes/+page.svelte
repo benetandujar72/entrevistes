@@ -3,6 +3,7 @@
   import { fetchEntrevistes, fetchTodasLasEntrevistasAdmin, type Entrevista, type EntrevistaAdmin, loadConfigSpreadsheets, setSelectedCourse, getSelectedCourse, formatearFechaMadridSoloFecha, deleteEntrevista } from '$lib';
   import { getToken } from '$lib/auth';
   import Icon from '$lib/components/SimpleIcon.svelte';
+  import FilterBar from '$lib/components/FilterBar.svelte';
   
   let entrevistes: (Entrevista | EntrevistaAdmin)[] = [];
   let q = '';
@@ -89,53 +90,34 @@
   });
 </script>
 
-<div class="page-header">
-  <div class="header-content">
-    <h1 class="page-title">
-      <Icon name="notes" size={24} />
-      Entrevistes
-    </h1>
-    {#if isAdmin}
-      <div class="admin-badge">
-        <Icon name="user" size={14} />
-        <span>Vista Administrador - {totalEntrevistas} entrevistas total</span>
-      </div>
-    {/if}
+<FilterBar 
+  title="Entrevistes"
+  count={totalEntrevistas}
+  {loading}
+  filters={{
+    curs: { 
+      value: selected, 
+      options: [
+        { value: "1r", label: "1r ESO" },
+        { value: "2n", label: "2n ESO" },
+        { value: "3r", label: "3r ESO" },
+        { value: "4t", label: "4t ESO" }
+      ],
+      onChange: (value) => { 
+        setSelectedCourse(value as any); 
+        reload(); 
+      }
+    },
+    search: { value: q, placeholder: "Cercar per acords, alumne..." }
+  }}
+/>
+
+{#if isAdmin}
+  <div class="admin-badge">
+    <Icon name="user" size={14} />
+    <span>Vista Administrador - {totalEntrevistas} entrevistas total</span>
   </div>
-  
-  <div class="filters">
-    <div class="filter-group">
-      <label for="curs-select">Curs</label>
-      <select 
-        id="curs-select"
-        name="curs"
-        bind:value={selected} 
-        onchange={() => { setSelectedCourse(selected as any); reload(); }} 
-        class="select"
-      >
-        <option value="">(tots els cursos)</option>
-        <option value="1r">1r ESO</option>
-        <option value="2n">2n ESO</option>
-        <option value="3r">3r ESO</option>
-        <option value="4t">4t ESO</option>
-      </select>
-    </div>
-    
-    <div class="filter-group">
-      <label for="search-input">Filtrar</label>
-      <div class="search-input">
-        <input 
-          id="search-input"
-          name="search"
-          placeholder="Cercar per acords, alumne..." 
-          bind:value={q} 
-          class="input"
-        />
-        <Icon name="search" size={16} class="search-icon" />
-      </div>
-    </div>
-  </div>
-</div>
+{/if}
 
 {#if loading}
   <!-- Skeleton grid -->

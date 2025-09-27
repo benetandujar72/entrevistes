@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { fetchAlumnesDb, type Alumne, loadConfigSpreadsheets, setSelectedCourse, getSelectedCourse } from '$lib';
-  import TextField from '$lib/components/TextField.svelte';
+  import FilterBar from '$lib/components/FilterBar.svelte';
   import Button from '$lib/components/Button.svelte';
 
   let alumnes: Alumne[] = [];
@@ -9,6 +9,7 @@
   let grup = '';
   let loading = true;
   let error: string | null = null;
+  let count = 0;
 
   let selected: string | undefined = undefined;
   let cfg = loadConfigSpreadsheets();
@@ -20,6 +21,7 @@
       loading = true; error = null;
       const params = anyCurs ? { anyCurs } : undefined;
       alumnes = await fetchAlumnesDb(params);
+      count = alumnes.length;
     } catch (e: any) {
       error = e?.message ?? 'Error';
     } finally {
@@ -43,31 +45,29 @@
     });
 </script>
 
-<section style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
-  <h1 style="margin:0; font-size:22px;">Alumnes {#if !loading}<span style="font-size:14px; color:#6b7280;">({alumnes.length})</span>{/if}</h1>
-  <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
-    <div style="min-width:140px;">
-      <TextField label="Any" bind:value={anyCurs} placeholder="2025-2026" />
-    </div>
-    <div>
-      <label for="nivell" style="font-size:12px; color:#6b7280;">Curs</label>
-      <select id="nivell" bind:value={selected} onchange={() => { setSelectedCourse(selected as any); load(); }} style="display:block; padding:10px 12px; border:1px solid var(--border); border-radius:10px; min-width:140px; background: var(--input-bg); color: var(--fg);">
-        <option value="">(sense selecció)</option>
-        <option value="1r">1r ESO</option>
-        <option value="2n">2n ESO</option>
-        <option value="3r">3r ESO</option>
-        <option value="4t">4t ESO</option>
-      </select>
-    </div>
-    <div style="min-width:120px;">
-      <TextField label="Grup" bind:value={grup} placeholder="Ex: 1A, 1B, 2C..." />
-    </div>
-    <div style="min-width:220px;">
-      <TextField label="Cercar" bind:value={q} placeholder="Nom de l'alumne..." />
-    </div>
-  </div>
-  <div style="flex: 1 0 100%; height:1px; background:#f3f4f6; margin-top:8px;"></div>
-</section>
+<FilterBar 
+  title="Alumnes"
+  {count}
+  {loading}
+  filters={{
+    any: { value: anyCurs, placeholder: "2025-2026" },
+    curs: { 
+      value: selected, 
+      options: [
+        { value: "1r", label: "1r ESO" },
+        { value: "2n", label: "2n ESO" },
+        { value: "3r", label: "3r ESO" },
+        { value: "4t", label: "4t ESO" }
+      ],
+      onChange: (value) => { 
+        setSelectedCourse(value as any); 
+        load(); 
+      }
+    },
+    grup: { value: grup, placeholder: "Ex: 1A, 1B, 2C..." },
+    search: { value: q, placeholder: "Nom de l'alumne..." }
+  }}
+/>
 
 {#if loading}
   <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap:12px;">
