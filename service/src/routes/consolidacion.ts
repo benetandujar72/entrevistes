@@ -86,6 +86,11 @@ async function consolidarEntrevistesPerCurs(curs: string): Promise<Consolidacion
     const spreadsheetId = configResult.rows[0].valor.replace(/"/g, '');
     console.log(`[CONSOLIDACION] Processant consolidació per a ${curs} amb ID: ${spreadsheetId}`);
     
+    // Validar que el spreadsheetId no estigui buit
+    if (!spreadsheetId || spreadsheetId.trim() === '') {
+      throw new Error(`No s'ha configurat el spreadsheet ID per al curs ${curs}. Configura-ho primer a la secció d'administració.`);
+    }
+    
     // 2. Obtenir any actual
     const anyCursResult = await query(`
       SELECT valor FROM config WHERE clave = 'anyActual'
