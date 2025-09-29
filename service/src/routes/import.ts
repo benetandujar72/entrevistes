@@ -110,6 +110,20 @@ router.post('/entrevistes-tabs-import', async (req: Request, res: Response) => {
             continue; 
           }
           
+          // Buscar el alumne por nombre en la base de datos (case-insensitive)
+          const alumneResult = await tx.query<{ alumne_id: string }>(
+            'SELECT alumne_id FROM alumnes WHERE LOWER(TRIM(nom)) = LOWER(TRIM($1))',
+            [e.alumneId]
+          );
+          
+          if (alumneResult.rows.length === 0) {
+            console.log('[IMPORT] No se encontró alumno con nombre:', e.alumneId);
+            ignorades++;
+            continue;
+          }
+          
+          const alumneId = alumneResult.rows[0].alumne_id;
+          
           // Generar ID si no existe
           const id = e.id || ulid();
           
@@ -119,13 +133,19 @@ router.post('/entrevistes-tabs-import', async (req: Request, res: Response) => {
           // Agregar nombre de pestaña a los acuerdos
           const acords = e.acords ? `[${e.tabName || tab.tabName}] ${e.acords}` : `[${e.tabName || tab.tabName}]`;
           
-          console.log('[IMPORT] Importando entrevista:', { id, alumneId: e.alumneId, data, acords });
+          console.log('[IMPORT] Importando entrevista:', { 
+            id, 
+            alumneNom: e.alumneId, 
+            alumneId, 
+            data, 
+            acords 
+          });
           
           await tx.query(
             `INSERT INTO entrevistes(id, alumne_id, any_curs, data, acords, usuari_creador_id)
              VALUES ($1,$2,$3,$4,$5,$6)
              ON CONFLICT (id) DO UPDATE SET acords=EXCLUDED.acords, data=EXCLUDED.data, updated_at=NOW()`,
-            [id, e.alumneId, anyCurs, data, acords, e.usuariCreadorId || 'import@system']
+            [id, alumneId, anyCurs, data, acords, e.usuariCreadorId || 'import@system']
           );
           importats++;
         }
