@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { query } from '../db.js';
+import { requireAuth } from '../middleware/auth.js';
 import { 
   normalizarNombre, 
   procesarFilaDeEntrevistas
@@ -403,7 +404,87 @@ router.post('/init-config', async (req, res) => {
     console.error('Error inicializando configuración:', error);
     res.status(500).json({ 
       error: 'Error inicializando configuración',
-      details: (error as any).message 
+      details: (error as any).message
+    });
+  }
+});
+
+// POST /consolidacion/save-config - Guardar configuración de Google Sheets
+router.post('/save-config', requireAuth(), async (req, res) => {
+  try {
+    const user = req.user;
+    if (!user || user.role !== 'admin') {
+      return res.status(403).json({ error: 'Només els administradors poden configurar Google Sheets' });
+    }
+
+    const { spreadsheetIds } = req.body;
+    
+    if (!spreadsheetIds || typeof spreadsheetIds !== 'object') {
+      return res.status(400).json({ error: 'Dades de configuració invàlides' });
+    }
+
+    // Validar que tots els IDs siguin strings vàlids
+    const validKeys = ['1rSpreadsheetId', '2nSpreadsheetId', '3rSpreadsheetId', '4tSpreadsheetId'];
+    for (const key of validKeys) {
+      if (spreadsheetIds[key] && typeof spreadsheetIds[key] !== 'string') {
+        return res.status(400).json({ error: `El ID per ${key} ha de ser una cadena de text` });
+      }
+    }
+
+    // Actualizar configuración en la base de datos
+    for (const [key, value] of Object.entries(spreadsheetIds)) {
+      if (validKeys.includes(key)) {
+        const valor = value ? `"${value}"` : '""';
+        await query(`
+          UPDATE config SET valor = $1 WHERE clave = $2
+        `, [valor, key]);
+      }
+    }
+
+    console.log(`[CONFIG] Configuració de Google Sheets actualitzada per ${user.email}:`, spreadsheetIds);
+
+    res.json({ 
+      message: 'Configuració de Google Sheets guardada correctament',
+      status: 'saved',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Error guardant configuració:', error);
+    res.status(500).json({ 
+      error: 'Error guardant configuració',
+      details: (error as any).message
+    });
+  }
+});
+
+// GET /consolidacion/get-config - Obtener configuración actual
+router.get('/get-config', requireAuth(), async (req, res) => {
+  try {
+    const user = req.user;
+    if (!user || user.role !== 'admin') {
+      return res.status(403).json({ error: 'Només els administradors poden veure la configuració' });
+    }
+
+    const configResult = await query(`
+      SELECT clave, valor FROM config 
+      WHERE clave IN ('anyActual', '1rSpreadsheetId', '2nSpreadsheetId', '3rSpreadsheetId', '4tSpreadsheetId')
+    `);
+
+    const config: Record<string, string> = {};
+    for (const row of configResult.rows) {
+      config[row.clave] = row.valor.replace(/"/g, '');
+    }
+
+    res.json({ 
+      config,
+      status: 'ok',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Error obtenint configuració:', error);
+    res.status(500).json({ 
+      error: 'Error obtenint configuració',
+      details: (error as any).message
     });
   }
 });
