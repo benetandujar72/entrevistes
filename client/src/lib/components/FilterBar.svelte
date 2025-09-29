@@ -12,10 +12,10 @@
     count?: number;
     loading?: boolean;
     filters?: {
-      any?: { value: string; placeholder?: string };
+      any?: { value: string; placeholder?: string; onChange?: (value: string) => void };
       curs?: { value: string; options: FilterOption[]; onChange?: (value: string) => void };
-      grup?: { value: string; placeholder?: string };
-      search?: { value: string; placeholder?: string };
+      grup?: { value: string; placeholder?: string; onChange?: (value: string) => void };
+      search?: { value: string; placeholder?: string; onChange?: (value: string) => void };
     };
   }
 
@@ -45,7 +45,8 @@
         <div class="filter-field">
           <TextField 
             label="Any" 
-            bind:value={filters.any.value} 
+            value={filters.any.value}
+            oninput={(e: any) => { if (filters.any?.onChange) filters.any.onChange(e.target.value); }}
             placeholder={filters.any.placeholder || "2025-2026"}
           />
         </div>
@@ -57,7 +58,17 @@
           <select 
             id="curs-select"
             bind:value={filters.curs.value}
-            onchange={() => filters.curs?.onChange?.(filters.curs.value)}
+            onchange={(e: any) => {
+              console.log('🎯 FilterBar - onchange ejecutado:', e.target.value);
+              console.log('🎯 FilterBar - filters.curs?.onChange existe:', !!filters.curs?.onChange);
+              if (filters.curs?.onChange) {
+                console.log('🎯 FilterBar - Llamando a onChange con:', e.target.value);
+                filters.curs.onChange(e.target.value);
+                console.log('🎯 FilterBar - onChange completado');
+              } else {
+                console.log('🎯 FilterBar - onChange no existe');
+              }
+            }}
             class="filter-select"
           >
             <option value="">(sense selecció)</option>
@@ -72,7 +83,8 @@
         <div class="filter-field">
           <TextField 
             label="Grup" 
-            bind:value={filters.grup.value} 
+            value={filters.grup.value}
+            oninput={(e: any) => { if (filters.grup?.onChange) filters.grup.onChange(e.target.value); }}
             placeholder={filters.grup.placeholder || "Ex: 1A, 1B, 2C..."}
           />
         </div>
@@ -82,7 +94,8 @@
         <div class="filter-field search-field">
           <TextField 
             label="Cercar" 
-            bind:value={filters.search.value} 
+            value={filters.search.value}
+            oninput={(e: any) => { if (filters.search?.onChange) filters.search.onChange(e.target.value); }}
             placeholder={filters.search.placeholder || "Nom de l'alumne..."}
             leadingIcon="search"
           />
@@ -137,7 +150,8 @@
     display: flex;
     flex-direction: column;
     min-width: 0; /* Permite que el campo se contraiga */
-    min-height: 80px; /* Altura mínima para evitar solapamiento */
+    min-height: 90px; /* Altura mínima aumentada para evitar solapamiento */
+    gap: 0.5rem; /* Espacio entre elementos del campo */
   }
 
   .filter-field.search-field {
@@ -148,9 +162,10 @@
     font-size: var(--text-sm);
     font-weight: 500;
     color: var(--fg-secondary);
-    margin-bottom: 0.75rem; /* Más espacio entre label y input */
+    margin-bottom: 0.5rem; /* Espacio reducido pero suficiente */
     display: block;
     line-height: 1.2;
+    white-space: nowrap; /* Evita que el texto se corte */
   }
 
   .filter-select {
@@ -186,7 +201,7 @@
     }
     
     .filter-field {
-      min-height: 70px; /* Altura mínima reducida en móvil */
+      min-height: 80px; /* Altura mínima ajustada en móvil */
     }
     
     .filter-bar {

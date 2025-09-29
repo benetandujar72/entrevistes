@@ -4,6 +4,7 @@ import { query } from '../db.js';
 import multer from 'multer';
 import csv from 'csv-parser';
 import { Readable } from 'stream';
+import { ulid } from 'ulid';
 
 const router = Router();
 
@@ -72,9 +73,12 @@ router.post('/dades-complets', upload.single('csv'), async (req: any, res: Respo
             cleanRow[key] = value === '' || value === 'null' || value === 'NULL' ? null : value;
           });
           
-          // Solo agregar si tiene datos mínimos
-          if (cleanRow.alumne_nom && cleanRow.grup) {
+          // Solo agregar si tiene datos mínimos Y no es la cabecera
+          if (cleanRow.alumne_nom && cleanRow.grup && cleanRow.alumne_nom !== 'Alumn@') {
             csvData.push(cleanRow);
+            console.log(`✅ Agregado: ${cleanRow.alumne_nom} (${cleanRow.grup})`);
+          } else {
+            console.log(`⚠️ Saltando línea: ${cleanRow.alumne_nom || 'SIN_NOMBRE'} (${cleanRow.grup || 'SIN_GRUPO'})`);
           }
         })
         .on('end', resolve)
@@ -136,6 +140,13 @@ router.post('/dades-complets', upload.single('csv'), async (req: any, res: Respo
         }
         
         console.log(`👤 Procesando alumno ${i + 1}/${csvData.length}: ${row.alumne_nom}`);
+        
+        // Verificar si el alumno ya existe
+        const alumneExistente = await query('SELECT alumne_id FROM alumnes WHERE nom = $1', [row.alumne_nom]);
+        if (alumneExistente.rows.length > 0) {
+          console.log(`⚠️  Alumno ya existe: ${row.alumne_nom}, saltando...`);
+          continue;
+        }
 
         // Crear alumne_id único
         const alumneId = `alumne_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -359,6 +370,11 @@ router.post('/alumne-individual', requireAuth(), async (req: Request, res: Respo
       console.log(`🔄 Actualizando alumno existente: ${alumne_nom} (${email_alumnat})`);
     } else {
       console.log(`➕ Creando nuevo alumno: ${alumne_nom} (${email_alumnat})`);
+      // Generar personal_id si no se proporciona
+      if (!personalIdFinal) {
+        personalIdFinal = ulid();
+        console.log(`🆔 Generado personal_id: ${personalIdFinal}`);
+      }
     }
 
     // Insertar/actualizar datos personales

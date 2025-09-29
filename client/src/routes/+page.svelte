@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  const CLIENT_ID = '582773400896-0io28jocfebl0aec7u5bnr6up367chs6.apps.googleusercontent.com';
+  const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '582773400896-0io28jocfebl0aec7u5bnr6up367chs6.apps.googleusercontent.com';
   import { setToken, getToken } from '$lib/auth';
   import { authHeaders } from '$lib';
   import { toastSuccess, toastError } from '$lib/toast';
@@ -25,7 +25,8 @@
       
       // Validar token con el backend
       try {
-        const r = await fetch('http://localhost:8081/usuaris/me', {
+        const backendUrl = import.meta.env.VITE_BACKEND_BASE || 'http://localhost:8081';
+        const r = await fetch(`${backendUrl}/usuaris/me`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (r.ok) {

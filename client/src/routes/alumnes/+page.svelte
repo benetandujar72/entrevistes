@@ -10,12 +10,20 @@
   let loading = true;
   let error: string | null = null;
   let count = 0;
+  let filtered: Alumne[] = [];
 
   let selected: string | undefined = undefined;
+  let selectedValue: string = ''; // Variable para el binding del selector
   let cfg = loadConfigSpreadsheets();
   let anyCurs = '';
 
-  onMount(async () => { selected = getSelectedCourse(); await load(); });
+  onMount(async () => { 
+    selected = getSelectedCourse(); 
+    selectedValue = selected || '';
+    console.log('🚀 onMount - selected inicial:', selected);
+    console.log('🚀 onMount - selectedValue inicial:', selectedValue);
+    await load(); 
+  });
   async function load() {
     try {
       loading = true; error = null;
@@ -29,20 +37,85 @@
     }
   }
 
-  $: filtered = alumnes
-    .filter(a => a.nom.toLowerCase().includes(q.toLowerCase()))
-    .filter(a => !grup || (a.grup || '').toLowerCase() === grup.toLowerCase())
-    .filter(a => {
-      if (!selected) return true;
-      // Mapear curso a prefijo de grupo
-      const cursoPrefix = {
-        '1r': '1',
-        '2n': '2', 
-        '3r': '3',
-        '4t': '4'
-      }[selected];
-      return cursoPrefix ? (a.grup || '').startsWith(cursoPrefix) : true;
+  // Reactive statement para sincronizar selectedValue con selected
+  $: {
+    if (selected !== undefined) {
+      console.log('🔄 REACTIVO - selected cambió a:', selected);
+      selectedValue = selected;
+    }
+  }
+
+  // Reactive statement para detectar cambios en selectedValue
+  $: {
+    if (selectedValue !== selected) {
+      console.log('🔄 REACTIVO - selectedValue cambió a:', selectedValue);
+      selected = selectedValue;
+      setSelectedCourse(selectedValue);
+    }
+  }
+
+  // Función de filtrado reactiva que se ejecuta automáticamente
+  $: filtered = (() => {
+    console.log('🔍 Filtros activos:', { selected, grup, q, anyCurs });
+    console.log('📊 Total alumnos:', alumnes.length);
+    
+    if (alumnes.length === 0) {
+      return [];
+    }
+    
+    // Debug: mostrar algunos ejemplos de grupos
+    console.log('📋 Ejemplos de grupos:', alumnes.slice(0, 5).map(a => ({ nom: a.nom, grup: a.grup })));
+    
+    const filteredResult = alumnes.filter(a => {
+      // Filtro por nombre
+      const nombreMatch = !q || a.nom.toLowerCase().includes(q.toLowerCase());
+      
+      // Filtro por grupo
+      const grupoMatch = !grup || (a.grup || '').toLowerCase().includes(grup.toLowerCase());
+      
+      // Filtro por curso
+      let cursoMatch = true;
+      if (selected && selected !== '') {
+        console.log(`🔍 Aplicando filtro de curso: "${selected}"`);
+        
+        // Mapeo correcto: curso -> prefijo de grupo
+        const cursoMapping = {
+          '1r': '1',  // 1r ESO -> grupos 1A, 1B, 1C
+          '2n': '2',  // 2n ESO -> grupos 2A, 2B, 2C  
+          '3r': '3',  // 3r ESO -> grupos 3A, 3B, 3C
+          '4t': '4'   // 4t ESO -> grupos 4A, 4B, 4C
+        };
+        
+        const cursoPrefix = cursoMapping[selected];
+        if (cursoPrefix) {
+          const alumneGrup = (a.grup || '').toLowerCase();
+          console.log(`🔍 Verificando: ${a.nom} (${a.grup}) - buscando prefijo "${cursoPrefix}" en "${alumneGrup}"`);
+          
+          // El grupo debe empezar con el prefijo del curso
+          cursoMatch = alumneGrup.startsWith(cursoPrefix);
+          
+          if (cursoMatch) {
+            console.log(`✅ ${a.nom} (${a.grup}) - PASA FILTRO DE CURSO (${selected})`);
+          } else {
+            console.log(`❌ ${a.nom} (${a.grup}) - NO PASA FILTRO DE CURSO (${selected})`);
+          }
+        } else {
+          console.log(`⚠️ Curso no reconocido: "${selected}"`);
+        }
+      } else {
+        console.log(`⚠️ No hay curso seleccionado (selected: "${selected}")`);
+      }
+      
+      return nombreMatch && grupoMatch && cursoMatch;
     });
+    
+    console.log('✅ Alumnos filtrados:', filteredResult.length);
+    if (filteredResult.length > 0) {
+      console.log('📋 Primeros alumnos filtrados:', filteredResult.slice(0, 3).map(a => ({ nom: a.nom, grup: a.grup })));
+    }
+    
+    return filteredResult;
+  })()
 </script>
 
 <FilterBar 
@@ -50,22 +123,52 @@
   {count}
   {loading}
   filters={{
-    any: { value: anyCurs, placeholder: "2025-2026" },
-    curs: { 
-      value: selected, 
-      options: [
-        { value: "1r", label: "1r ESO" },
-        { value: "2n", label: "2n ESO" },
-        { value: "3r", label: "3r ESO" },
-        { value: "4t", label: "4t ESO" }
-      ],
-      onChange: (value) => { 
-        setSelectedCourse(value as any); 
-        load(); 
-      }
-    },
-    grup: { value: grup, placeholder: "Ex: 1A, 1B, 2C..." },
-    search: { value: q, placeholder: "Nom de l'alumne..." }
+             any: { 
+               value: anyCurs, 
+               placeholder: "2025-2026",
+               onChange: (value) => { 
+                 console.log('🔄 CAMBIO anyCurs:', value, '-> anterior:', anyCurs);
+                 anyCurs = value; 
+                 console.log('🔄 anyCurs después del cambio:', anyCurs);
+                 load(); 
+               }
+             },
+             curs: { 
+               value: selectedValue, 
+               options: [
+                 { value: "1r", label: "1r ESO" },
+                 { value: "2n", label: "2n ESO" },
+                 { value: "3r", label: "3r ESO" },
+                 { value: "4t", label: "4t ESO" }
+               ],
+               onChange: (value) => { 
+                 console.log('🔄 CAMBIO curso:', value, '-> anterior:', selectedValue);
+                 console.log('🔄 Ejecutando onChange del selector de curso');
+                 selectedValue = value;
+                 console.log('🔄 selectedValue después del cambio:', selectedValue);
+                 console.log('🔄 Llamando a load()...');
+                 load(); 
+                 console.log('🔄 load() completado');
+               }
+             },
+             grup: { 
+               value: grup, 
+               placeholder: "Ex: 1A, 1B, 2C...",
+               onChange: (value) => { 
+                 console.log('🔄 CAMBIO grupo:', value, '-> anterior:', grup);
+                 grup = value; 
+                 console.log('🔄 grup después del cambio:', grup);
+               }
+             },
+             search: { 
+               value: q, 
+               placeholder: "Nom de l'alumne...",
+               onChange: (value) => { 
+                 console.log('🔄 CAMBIO búsqueda:', value, '-> anterior:', q);
+                 q = value; 
+                 console.log('🔄 q después del cambio:', q);
+               }
+             }
   }}
 />
 

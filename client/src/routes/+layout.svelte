@@ -24,7 +24,8 @@
         // Verificar estado de autenticación del servidor
         let authDisabled = false;
         try {
-            const r = await fetch('http://localhost:8081/api/auth/status');
+            const backendUrl = import.meta.env.VITE_BACKEND_BASE || 'http://localhost:8081';
+            const r = await fetch(`${backendUrl}/api/auth/status`);
             if (r.ok) {
                 const data = await r.json();
                 authDisabled = data.authDisabled;
@@ -46,7 +47,8 @@
             if (t) {
                 try {
                     // Verificar que el token es válido haciendo una petición autenticada
-                    const r = await fetch('http://localhost:8081/usuaris/me', {
+                    const backendUrl = import.meta.env.VITE_BACKEND_BASE || 'http://localhost:8081';
+                    const r = await fetch(`${backendUrl}/usuaris/me`, {
                         headers: { Authorization: `Bearer ${t}` }
                     });
                     if (r.ok) {
@@ -111,7 +113,8 @@
         // Obtener rol via /usuaris/me
         if (t) {
             try {
-                const r = await fetch('http://localhost:8081/usuaris/me', { headers: { Authorization: `Bearer ${t}` } });
+                const backendUrl = import.meta.env.VITE_BACKEND_BASE || 'http://localhost:8081';
+                const r = await fetch(`${backendUrl}/usuaris/me`, { headers: { Authorization: `Bearer ${t}` } });
                 if (r.ok) {
                     const data = await r.json();
                     isAdmin = data.role === 'admin';
