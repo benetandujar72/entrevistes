@@ -37,21 +37,12 @@
     }
   }
 
-  // Reactive statement para sincronizar selectedValue con selected
-  $: {
-    if (selected !== undefined) {
-      console.log('🔄 REACTIVO - selected cambió a:', selected);
-      selectedValue = selected;
-    }
-  }
-
-  // Reactive statement para detectar cambios en selectedValue
-  $: {
-    if (selectedValue !== selected) {
-      console.log('🔄 REACTIVO - selectedValue cambió a:', selectedValue);
-      selected = selectedValue;
-      setSelectedCourse(selectedValue);
-    }
+  // Función para manejar cambios en el selector de curso
+  function handleCourseChange(value: string) {
+    console.log('🔄 Cambio de curso:', value);
+    selected = value;
+    selectedValue = value;
+    setSelectedCourse(value);
   }
 
   // Función de filtrado reactiva que se ejecuta automáticamente
@@ -141,15 +132,7 @@
                  { value: "3r", label: "3r ESO" },
                  { value: "4t", label: "4t ESO" }
                ],
-               onChange: (value) => { 
-                 console.log('🔄 CAMBIO curso:', value, '-> anterior:', selectedValue);
-                 console.log('🔄 Ejecutando onChange del selector de curso');
-                 selectedValue = value;
-                 console.log('🔄 selectedValue después del cambio:', selectedValue);
-                 console.log('🔄 Llamando a load()...');
-                 load(); 
-                 console.log('🔄 load() completado');
-               }
+               onChange: handleCourseChange
              },
              grup: { 
                value: grup, 
