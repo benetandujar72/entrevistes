@@ -381,12 +381,12 @@ router.post('/init-config', async (req, res) => {
     
     // Insertar configuración básica
     await query(`
-      INSERT INTO config (clave, valor, descripcion) VALUES 
-      ('anyActual', '"2025-2026"', 'Año académico actual'),
-      ('1rSpreadsheetId', '""', 'ID del spreadsheet para 1r ESO'),
-      ('2nSpreadsheetId', '""', 'ID del spreadsheet para 2n ESO'),
-      ('3rSpreadsheetId', '""', 'ID del spreadsheet para 3r ESO'),
-      ('4tSpreadsheetId', '""', 'ID del spreadsheet para 4t ESO')
+      INSERT INTO config (clave, valor) VALUES 
+      ('anyActual', '"2025-2026"'),
+      ('1rSpreadsheetId', '""'),
+      ('2nSpreadsheetId', '""'),
+      ('3rSpreadsheetId', '""'),
+      ('4tSpreadsheetId', '""')
       ON CONFLICT (clave) DO NOTHING
     `);
     
