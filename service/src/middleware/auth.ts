@@ -24,25 +24,52 @@ export function requireAuth() {
   return async (req: Request, res: Response, next: NextFunction) => {
     // Solo autenticación a través de Google OAuth
     try {
+      console.log('🔐 Middleware auth - Headers:', req.headers);
+      console.log('🔐 Middleware auth - Authorization:', req.headers.authorization);
+      console.log('🔐 Middleware auth - X-ID-Token:', req.headers['x-id-token']);
+      
       const idToken = (req.headers['x-id-token'] || req.headers.authorization || '').toString().replace('Bearer ', '');
-      if (!idToken) return res.status(403).json({ error: 'Permís denegat' });
+      console.log('🔐 Middleware auth - Token extraído:', idToken ? 'Presente' : 'Ausente');
+      
+      if (!idToken) {
+        console.log('❌ Middleware auth - No hay token');
+        return res.status(403).json({ error: 'Permís denegat - No hay token' });
+      }
+      
+      console.log('🔐 Middleware auth - Verificando token con Google...');
       const ticket = await oauthClient.verifyIdToken({ idToken, audience: clientId });
       const payload = ticket.getPayload() as TokenPayload | undefined;
-      if (!payload?.email) return res.status(403).json({ error: 'Permís denegat' });
+      
+      if (!payload?.email) {
+        console.log('❌ Middleware auth - Token inválido o sin email');
+        return res.status(403).json({ error: 'Permís denegat - Token inválido' });
+      }
+      
       const email = payload.email.toLowerCase();
-      if (!email.endsWith('@' + allowedDomain)) return res.status(403).json({ error: 'Permís denegat' });
+      console.log('🔐 Middleware auth - Email extraído:', email);
+      
+      if (!email.endsWith('@' + allowedDomain)) {
+        console.log('❌ Middleware auth - Dominio no permitido:', email, 'debe terminar en @' + allowedDomain);
+        return res.status(403).json({ error: 'Permís denegat - Dominio no permitido' });
+      }
+      
       // Rol desde BD (usuaris)
       let role: 'docent' | 'admin' = 'docent';
       try {
         const r = await query<{ rol: 'docent' | 'admin' }>('SELECT rol FROM usuaris WHERE email=$1', [email]);
         if (r.rowCount && (r.rows[0].rol === 'admin' || r.rows[0].rol === 'docent')) role = r.rows[0].rol;
-      } catch {
+        console.log('🔐 Middleware auth - Rol asignado:', role);
+      } catch (error) {
+        console.log('⚠️ Middleware auth - Error consultando BD, usando rol por defecto:', error);
         // si no hay tabla, default a docent
       }
+      
       req.user = { email, role };
+      console.log('✅ Middleware auth - Usuario autenticado:', req.user);
       next();
     } catch (err) {
-      return res.status(403).json({ error: 'Permís denegat' });
+      console.log('❌ Middleware auth - Error:', err);
+      return res.status(403).json({ error: 'Permís denegat - Error de autenticación' });
     }
   };
 }
