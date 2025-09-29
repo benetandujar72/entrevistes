@@ -57,16 +57,10 @@
           <label for="curs-select" class="filter-label">Curs</label>
           <select 
             id="curs-select"
-            bind:value={filters.curs.value}
+            value={filters.curs.value}
             onchange={(e: any) => {
-              console.log('🎯 FilterBar - onchange ejecutado:', e.target.value);
-              console.log('🎯 FilterBar - filters.curs?.onChange existe:', !!filters.curs?.onChange);
               if (filters.curs?.onChange) {
-                console.log('🎯 FilterBar - Llamando a onChange con:', e.target.value);
                 filters.curs.onChange(e.target.value);
-                console.log('🎯 FilterBar - onChange completado');
-              } else {
-                console.log('🎯 FilterBar - onChange no existe');
               }
             }}
             class="filter-select"

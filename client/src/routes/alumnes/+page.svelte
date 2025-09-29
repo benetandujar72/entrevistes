@@ -12,7 +12,7 @@
   let count = 0;
   let filtered: Alumne[] = [];
 
-  let selected: string | undefined = undefined;
+  let selected: string = '';
   let selectedValue: string = ''; // Variable para el binding del selector
   let cfg = loadConfigSpreadsheets();
   let anyCurs = '';
@@ -39,7 +39,6 @@
 
   // Función para manejar cambios en el selector de curso
   function handleCourseChange(value: string) {
-    console.log('🔄 Cambio de curso:', value);
     selected = value;
     selectedValue = value;
     setSelectedCourse(value);
@@ -47,15 +46,9 @@
 
   // Función de filtrado reactiva que se ejecuta automáticamente
   $: filtered = (() => {
-    console.log('🔍 Filtros activos:', { selected, grup, q, anyCurs });
-    console.log('📊 Total alumnos:', alumnes.length);
-    
     if (alumnes.length === 0) {
       return [];
     }
-    
-    // Debug: mostrar algunos ejemplos de grupos
-    console.log('📋 Ejemplos de grupos:', alumnes.slice(0, 5).map(a => ({ nom: a.nom, grup: a.grup })));
     
     const filteredResult = alumnes.filter(a => {
       // Filtro por nombre
@@ -67,8 +60,6 @@
       // Filtro por curso
       let cursoMatch = true;
       if (selected && selected !== '') {
-        console.log(`🔍 Aplicando filtro de curso: "${selected}"`);
-        
         // Mapeo correcto: curso -> prefijo de grupo
         const cursoMapping = {
           '1r': '1',  // 1r ESO -> grupos 1A, 1B, 1C
@@ -80,30 +71,13 @@
         const cursoPrefix = cursoMapping[selected];
         if (cursoPrefix) {
           const alumneGrup = (a.grup || '').toLowerCase();
-          console.log(`🔍 Verificando: ${a.nom} (${a.grup}) - buscando prefijo "${cursoPrefix}" en "${alumneGrup}"`);
-          
           // El grupo debe empezar con el prefijo del curso
           cursoMatch = alumneGrup.startsWith(cursoPrefix);
-          
-          if (cursoMatch) {
-            console.log(`✅ ${a.nom} (${a.grup}) - PASA FILTRO DE CURSO (${selected})`);
-          } else {
-            console.log(`❌ ${a.nom} (${a.grup}) - NO PASA FILTRO DE CURSO (${selected})`);
-          }
-        } else {
-          console.log(`⚠️ Curso no reconocido: "${selected}"`);
         }
-      } else {
-        console.log(`⚠️ No hay curso seleccionado (selected: "${selected}")`);
       }
       
       return nombreMatch && grupoMatch && cursoMatch;
     });
-    
-    console.log('✅ Alumnos filtrados:', filteredResult.length);
-    if (filteredResult.length > 0) {
-      console.log('📋 Primeros alumnos filtrados:', filteredResult.slice(0, 3).map(a => ({ nom: a.nom, grup: a.grup })));
-    }
     
     return filteredResult;
   })()
@@ -118,9 +92,7 @@
                value: anyCurs, 
                placeholder: "2025-2026",
                onChange: (value) => { 
-                 console.log('🔄 CAMBIO anyCurs:', value, '-> anterior:', anyCurs);
                  anyCurs = value; 
-                 console.log('🔄 anyCurs después del cambio:', anyCurs);
                  load(); 
                }
              },
@@ -138,18 +110,14 @@
                value: grup, 
                placeholder: "Ex: 1A, 1B, 2C...",
                onChange: (value) => { 
-                 console.log('🔄 CAMBIO grupo:', value, '-> anterior:', grup);
                  grup = value; 
-                 console.log('🔄 grup después del cambio:', grup);
                }
              },
              search: { 
                value: q, 
                placeholder: "Nom de l'alumne...",
                onChange: (value) => { 
-                 console.log('🔄 CAMBIO búsqueda:', value, '-> anterior:', q);
                  q = value; 
-                 console.log('🔄 q después del cambio:', q);
                }
              }
   }}
