@@ -71,16 +71,16 @@
   <div style="border:1px solid #e5e7eb; border-radius:12px; padding:12px;">
     <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:end;">
       <div>
-        <label style="font-size:12px; color:#6b7280;">Email</label>
-        <input bind:value={email} placeholder="tutor@insbitacola.cat" style="display:block; padding:8px 10px; border:1px solid #e5e7eb; border-radius:8px; min-width:260px;" />
+        <label for="email-input" style="font-size:12px; color:#6b7280;">Email</label>
+        <input id="email-input" bind:value={email} placeholder="tutor@insbitacola.cat" style="display:block; padding:8px 10px; border:1px solid #e5e7eb; border-radius:8px; min-width:260px;" />
       </div>
       <div>
-        <label style="font-size:12px; color:#6b7280;">Any curs</label>
-        <input bind:value={anyCurs} placeholder="2025-2026" style="display:block; padding:8px 10px; border:1px solid #e5e7eb; border-radius:8px; min-width:160px;" />
+        <label for="any-curs-input" style="font-size:12px; color:#6b7280;">Any curs</label>
+        <input id="any-curs-input" bind:value={anyCurs} placeholder="2025-2026" style="display:block; padding:8px 10px; border:1px solid #e5e7eb; border-radius:8px; min-width:160px;" />
       </div>
       <div>
-        <label style="font-size:12px; color:#6b7280;">Grup</label>
-        <input bind:value={grup} placeholder="1A" style="display:block; padding:8px 10px; border:1px solid #e5e7eb; border-radius:8px; min-width:120px;" />
+        <label for="grup-input" style="font-size:12px; color:#6b7280;">Grup</label>
+        <input id="grup-input" bind:value={grup} placeholder="1A" style="display:block; padding:8px 10px; border:1px solid #e5e7eb; border-radius:8px; min-width:120px;" />
       </div>
       <button onclick={crear} style="padding:8px 14px; border:1px solid #2563eb; background:#2563eb; color:#fff; border-radius:8px;">Assignar</button>
     </div>
