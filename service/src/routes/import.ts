@@ -125,7 +125,7 @@ router.post('/entrevistes-tabs-import', async (req: Request, res: Response) => {
             `INSERT INTO entrevistes(id, alumne_id, any_curs, data, acords, usuari_creador_id)
              VALUES ($1,$2,$3,$4,$5,$6)
              ON CONFLICT (id) DO UPDATE SET acords=EXCLUDED.acords, data=EXCLUDED.data, updated_at=NOW()`,
-            [id, e.alumneId, anyCurs, data, acords, e.usuariCreadorId || null]
+            [id, e.alumneId, anyCurs, data, acords, e.usuariCreadorId || 'import@system']
           );
           importats++;
         }
