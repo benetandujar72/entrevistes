@@ -70,6 +70,8 @@ router.post('/entrevistes-tabs-preview', async (req: Request, res: Response) => 
 
 // Endpoint para importar entrevistas desde previsualización
 router.post('/entrevistes-tabs-import', async (req: Request, res: Response) => {
+  console.log('[IMPORT] Entrevistes-tabs-import - Body recibido:', JSON.stringify(req.body, null, 2));
+  
   const importSchema = z.object({
     spreadsheetId: z.string().min(1),
     anyCurs: z.string().min(1),
@@ -77,17 +79,20 @@ router.post('/entrevistes-tabs-import', async (req: Request, res: Response) => {
       tabName: z.string(),
       entrevistes: z.array(z.object({
         id: z.string().optional(),
-        alumneId: z.string(),
-        data: z.string(),
+        alumneId: z.string().optional(),
+        data: z.string().optional(),
         acords: z.string().optional(),
         usuariCreadorId: z.string().optional(),
-        tabName: z.string()
+        tabName: z.string().optional()
       }))
     }))
   });
   
   const parsed = importSchema.safeParse(req.body);
-  if (!parsed.success) return res.status(400).json({ error: 'Dades requerides incompletes' });
+  if (!parsed.success) {
+    console.log('[IMPORT] Error de validación:', parsed.error);
+    return res.status(400).json({ error: 'Dades requerides incompletes', details: parsed.error });
+  }
   const { spreadsheetId, anyCurs, tabsData } = parsed.data;
   
   try {
@@ -98,19 +103,29 @@ router.post('/entrevistes-tabs-import', async (req: Request, res: Response) => {
       
       for (const tab of tabsData) {
         for (const e of tab.entrevistes) {
-          if (!e.alumneId || !e.data) { ignorades++; continue; }
+          // Validar que tengamos datos mínimos
+          if (!e.alumneId) { 
+            console.log('[IMPORT] Ignorando entrevista sin alumneId:', e);
+            ignorades++; 
+            continue; 
+          }
           
           // Generar ID si no existe
           const id = e.id || ulid();
           
+          // Usar fecha actual si no hay fecha específica
+          const data = e.data || new Date().toISOString().slice(0, 10);
+          
           // Agregar nombre de pestaña a los acuerdos
-          const acords = e.acords ? `[${e.tabName}] ${e.acords}` : `[${e.tabName}]`;
+          const acords = e.acords ? `[${e.tabName || tab.tabName}] ${e.acords}` : `[${e.tabName || tab.tabName}]`;
+          
+          console.log('[IMPORT] Importando entrevista:', { id, alumneId: e.alumneId, data, acords });
           
           await tx.query(
             `INSERT INTO entrevistes(id, alumne_id, any_curs, data, acords, usuari_creador_id)
              VALUES ($1,$2,$3,$4,$5,$6)
              ON CONFLICT (id) DO UPDATE SET acords=EXCLUDED.acords, data=EXCLUDED.data, updated_at=NOW()`,
-            [id, e.alumneId, anyCurs, e.data, acords, e.usuariCreadorId || null]
+            [id, e.alumneId, anyCurs, data, acords, e.usuariCreadorId || null]
           );
           importats++;
         }
