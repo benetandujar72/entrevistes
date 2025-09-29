@@ -951,6 +951,19 @@ export async function obtenirTutores(): Promise<Tutor[]> {
   return data;
 }
 
+export async function obtenirAlumnesTutor(tutorEmail: string): Promise<any[]> {
+  const res = await fetch(`${BASE}/dades-personals/tutor/${tutorEmail}/alumnes`, {
+    headers: { ...authHeaders() }
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data?.error || 'Error obtenint alumnes');
+  return data.alumnes;
+}
+
+export function generarEnlaceCalendarioPublico(tutorEmail: string): string {
+  return `${BASE.replace('/api', '')}/calendario-publico/${tutorEmail}`;
+}
+
 // Funciones para emails masivos
 export type PlantillaEmail = {
   id: string;

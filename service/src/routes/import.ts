@@ -124,6 +124,25 @@ router.post('/entrevistes-tabs-import', async (req: Request, res: Response) => {
           
           const alumneId = alumneResult.rows[0].alumne_id;
           
+          // Validar que el alumne_id no esté vacío
+          if (!alumneId || alumneId.trim() === '') {
+            console.log('[IMPORT] AlumneId vacío para nombre:', e.alumneId);
+            ignorades++;
+            continue;
+          }
+          
+          // Verificar que el alumne existe realmente
+          const alumneExists = await tx.query<{ count: number }>(
+            'SELECT COUNT(*) as count FROM alumnes WHERE alumne_id = $1',
+            [alumneId]
+          );
+          
+          if (alumneExists.rows[0].count === 0) {
+            console.log('[IMPORT] AlumneId no existe en BD:', alumneId, 'para nombre:', e.alumneId);
+            ignorades++;
+            continue;
+          }
+          
           // Generar ID si no existe
           const id = e.id || ulid();
           

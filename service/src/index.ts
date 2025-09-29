@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 import { createApp } from './app.js';
 
 // Cargar variables de entorno
-dotenv.config({ path: '.env.local' });
+dotenv.config({ path: '.env' });
 dotenv.config();
 
 const app = createApp();

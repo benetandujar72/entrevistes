@@ -2,6 +2,8 @@ import { Router, Request, Response } from 'express';
 import { query } from '../db.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { z } from 'zod';
+import { googleCalendarService } from '../calendar/google-calendar.js';
+import { emailService } from '../email/email-service.js';
 
 const router = Router();
 
@@ -179,7 +181,9 @@ router.get('/:alumneId', requireAuth(), async (req: Request, res: Response) => {
         pf.*,
         g.nom as grup_nom,
         g.curs,
-        ta.tutor_email
+        ta.tutor_email,
+        pf.tutor_personal_nom,
+        pf.tutor_personal_email
       FROM alumnes a
       LEFT JOIN pf ON a.personal_id = pf.personal_id
       JOIN alumnes_curs ac ON a.alumne_id = ac.alumne_id AND ac.any_curs = $2
@@ -636,6 +640,98 @@ router.post('/programador/reservar', requireAuth(), async (req: Request, res: Re
       notes || null
     ]);
 
+    // Integrar con Google Calendar API
+    try {
+      const fechaFin = new Date(dataCita);
+      fechaFin.setMinutes(fechaFin.getMinutes() + (durada_minuts || 30));
+      
+      // Verificar conflictos antes de crear el evento
+      const hasConflicts = await googleCalendarService.checkConflicts(dataCita, fechaFin);
+      if (hasConflicts) {
+        return res.status(409).json({ 
+          error: 'Conflicto de horario detectado. Por favor, selecciona otro horario.' 
+        });
+      }
+
+      // Crear evento en Google Calendar
+      const googleEvent = await googleCalendarService.createEvent({
+        title: `Cita con ${nom_familia}`,
+        description: `Cita programada con ${nom_familia} (${email_familia}). Teléfono: ${telefon_familia}.${notes ? ' Notas: ' + notes : ''}`,
+        startTime: dataCita,
+        endTime: fechaFin,
+        attendees: [
+          { email: tutorEmail, name: 'Tutor' },
+          { email: email_familia, name: nom_familia }
+        ],
+        location: 'Centro Educativo'
+      });
+      
+      // Guardar en BD local con referencia a Google Calendar
+      await query(`
+        INSERT INTO eventos_calendario (
+          tutor_email, alumne_id, google_event_id, titulo, descripcion, 
+          fecha_inicio, fecha_fin, estado, datos_familia
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      `, [
+        tutorEmail,
+        alumneId,
+        googleEvent.googleEventId,
+        `Cita con ${nom_familia}`,
+        `Cita programada con ${nom_familia} (${email_familia}). Teléfono: ${telefon_familia}.${notes ? ' Notas: ' + notes : ''}`,
+        dataCita.toISOString(),
+        fechaFin.toISOString(),
+        'reservado',
+        JSON.stringify({ nom_familia, email_familia, telefon_familia, notes })
+      ]);
+      
+      console.log(`✅ Cita ${citaId} creada y sincronizada con Google Calendar: ${googleEvent.googleEventId}`);
+      
+      // Enviar notificación por email
+      try {
+        await emailService.sendCitaNotification({
+          tutorEmail: tutorEmail,
+          familiaEmail: email_familia,
+          familiaNombre: nom_familia,
+          fecha: fecha,
+          hora: hora,
+          duracion: durada_minuts || 30,
+          notas: notes,
+          tipo: 'nueva'
+        });
+        console.log(`📧 Notificación enviada a ${email_familia}`);
+      } catch (emailError: any) {
+        console.error('❌ Error enviando notificación por email:', emailError);
+        // No fallar la operación principal si hay error con email
+      }
+    } catch (calendarError: any) {
+      console.error('❌ Error creando evento en Google Calendar:', calendarError);
+      // Crear solo en BD local si hay error con Google Calendar
+      try {
+        const fechaFin = new Date(dataCita);
+        fechaFin.setMinutes(fechaFin.getMinutes() + (durada_minuts || 30));
+        
+        await query(`
+          INSERT INTO eventos_calendario (
+            tutor_email, alumne_id, titulo, descripcion, 
+            fecha_inicio, fecha_fin, estado, datos_familia
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        `, [
+          tutorEmail,
+          alumneId,
+          `Cita con ${nom_familia}`,
+          `Cita programada con ${nom_familia} (${email_familia}). Teléfono: ${telefon_familia}.${notes ? ' Notas: ' + notes : ''}`,
+          dataCita.toISOString(),
+          fechaFin.toISOString(),
+          'reservado',
+          JSON.stringify({ nom_familia, email_familia, telefon_familia, notes })
+        ]);
+        
+        console.log(`⚠️ Cita ${citaId} creada solo en BD local (Google Calendar no disponible)`);
+      } catch (localError: any) {
+        console.error('❌ Error creando evento en BD local:', localError);
+      }
+    }
+
     res.status(201).json({
       cita: result.rows[0],
       message: 'Horari reservat correctament'
@@ -644,6 +740,41 @@ router.post('/programador/reservar', requireAuth(), async (req: Request, res: Re
   } catch (error: any) {
     console.error('Error reservant horari:', error);
     res.status(500).json({ error: 'Error reservant horari' });
+  }
+});
+
+// GET /dades-personals/tutor/:tutorEmail/alumnes - Obtener alumnos del tutor
+router.get('/tutor/:tutorEmail/alumnes', requireAuth(), async (req: Request, res: Response) => {
+  try {
+    const user = req.user;
+    if (!user) {
+      return res.status(401).json({ error: 'No autenticat' });
+    }
+
+    const { tutorEmail } = req.params;
+
+    // Verificar permisos
+    if (user.role === 'docent' && user.email !== tutorEmail) {
+      return res.status(403).json({ error: 'No tens permisos per veure aquests alumnes' });
+    }
+
+    // Obtener alumnos del tutor
+    const result = await query(`
+      SELECT DISTINCT a.alumne_id, a.nom, a.cognoms, a.grup, a.curs
+      FROM alumnes a
+      JOIN tutories_alumne ta ON a.alumne_id = ta.alumne_id
+      WHERE ta.tutor_email = $1 AND ta.any_curs = '2025-2026'
+      ORDER BY a.nom, a.cognoms
+    `, [tutorEmail]);
+
+    res.json({
+      alumnes: result.rows,
+      total: result.rows.length
+    });
+
+  } catch (error: any) {
+    console.error('Error obtenint alumnes del tutor:', error);
+    res.status(500).json({ error: 'Error obtenint alumnes' });
   }
 });
 

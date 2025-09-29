@@ -183,6 +183,67 @@
     }
   }
 
+  function crearNovaEntrevista() {
+    if (!dadesPersonals) {
+      console.log('❌ ERROR: dadesPersonals no disponibles');
+      return;
+    }
+    
+    console.log('🔍 DEBUG - dadesPersonals disponibles:', dadesPersonals);
+    
+    // Navegar a la página de nueva entrevista con todos los datos del alumne
+    const params = new URLSearchParams({
+      alumne: alumneId,
+      nom: dadesPersonals.alumne_nom,
+      grup: dadesPersonals.grup_nom,
+      curs: dadesPersonals.any_curs || '',
+      email: dadesPersonals.tutor1_email || dadesPersonals.alumne_email || '',
+      telefon: dadesPersonals.tutor1_tel || dadesPersonals.alumne_telefon || '',
+      tutor: dadesPersonals.tutor_personal_nom || dadesPersonals.tutor_nom || '',
+      tutor_email: dadesPersonals.tutor_personal_email || dadesPersonals.tutor_email || '',
+      // Dades del primer tutor per a la cita
+      nom_familia: dadesPersonals.tutor1_nom || '',
+      email_familia: dadesPersonals.tutor1_email || '',
+      telefon_familia: dadesPersonals.tutor1_tel || ''
+    });
+    
+    console.log('🔍 DEBUG - Parámetros generados:', params.toString());
+    console.log('🔍 DEBUG - URL completa:', `/entrevistes/nova?${params.toString()}`);
+    
+    window.location.href = `/entrevistes/nova?${params.toString()}`;
+  }
+
+  function crearNovaCita() {
+    console.log('🔍 DEBUG - Funció crearNovaCita executada!');
+    console.log('🔍 DEBUG - activeTab actual:', activeTab);
+    console.log('🔍 DEBUG - showCitaForm actual:', showCitaForm);
+    
+    if (!dadesPersonals) {
+      console.log('❌ ERROR: dadesPersonals no disponibles');
+      return;
+    }
+    
+    console.log('🔍 DEBUG - Carregant dades del primer tutor per a la cita:', {
+      tutor1_nom: dadesPersonals.tutor1_nom,
+      tutor1_email: dadesPersonals.tutor1_email,
+      tutor1_tel: dadesPersonals.tutor1_tel
+    });
+    
+    console.log('🔍 DEBUG - Formulari abans de carregar:', citaForm);
+    
+    // Carregar dades del primer tutor al formulari de cita
+    citaForm.nom_familia = dadesPersonals.tutor1_nom || '';
+    citaForm.email_familia = dadesPersonals.tutor1_email || '';
+    citaForm.telefon_familia = dadesPersonals.tutor1_tel || '';
+    
+    console.log('🔍 DEBUG - Formulari després de carregar:', citaForm);
+    
+    // Mostrar el formulari de cita
+    showCitaForm = true;
+    
+    console.log('🔍 DEBUG - Formulari mostrat:', showCitaForm);
+  }
+
   async function eliminarAlumneConfirmat() {
     if (!confirm('Estàs segur que vols eliminar aquest alumne? Aquesta acció no es pot desfer.')) {
       return;
@@ -302,6 +363,7 @@
           </div>
         </div>
         <div class="header-actions">
+          <Button variant="filled" leadingIcon="mail" on:click={crearNovaEntrevista}>Nova Entrevista</Button>
           {#if me?.role === 'admin'}
             <Button variant="tonal" leadingIcon="download" on:click={exportarCSV}>Exportar CSV</Button>
             <Button variant="outlined" leadingIcon="trash" on:click={eliminarAlumneConfirmat}>Eliminar</Button>
@@ -566,7 +628,7 @@
         <div class="calendari-section">
           <div class="section-header">
             <h2>Calendari de Cites</h2>
-            <Button variant="filled" leadingIcon="plus" on:click={() => showCitaForm = !showCitaForm}>Nova Cita</Button>
+            <Button variant="filled" leadingIcon="plus" on:click={crearNovaCita}>Nova Cita</Button>
           </div>
 
           {#if showCitaForm}

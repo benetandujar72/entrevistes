@@ -129,9 +129,53 @@ async function importarTodosDatos() {
                         }
                         
                         if (!alumno) {
-                            errores++;
-                            erroresDetalle.push(`${dato.alumne_nom}: No encontrado en BD`);
-                            continue;
+                            // Si no se encuentra el alumno, crearlo
+                            console.log(`🆕 Creando alumno nuevo: ${dato.alumne_nom}`);
+                            
+                            const alumneId = `alumne_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                            
+                            // Insertar alumne
+                            await client.query(
+                                'INSERT INTO alumnes (alumne_id, nom) VALUES ($1, $2)',
+                                [alumneId, dato.alumne_nom]
+                            );
+                            
+                            // Crear alumno para el mapa
+                            alumno = {
+                                alumne_id: alumneId,
+                                nom: dato.alumne_nom
+                            };
+                            
+                            // Afegir al mapa per futures referències
+                            alumnosMap.set(nombreNormalizado, alumno);
+                            
+                            // Afegir al curs si hi ha grup
+                            const grupCSV = values[2]?.trim();
+                            if (grupCSV) {
+                                // Buscar o crear grup
+                                let grupResult = await client.query('SELECT grup_id FROM grups WHERE nom = $1', [grupCSV]);
+                                
+                                if (grupResult.rows.length === 0) {
+                                    // Crear grup nou
+                                    const grupId = `grup_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                                    const anyCurs = '2025-2026';
+                                    const curs = grupCSV.charAt(0) + 'r ESO';
+                                    
+                                    await client.query(
+                                        'INSERT INTO grups (grup_id, any_curs, curs, nom) VALUES ($1, $2, $3, $4)',
+                                        [grupId, anyCurs, curs, grupCSV]
+                                    );
+                                    
+                                    grupResult = { rows: [{ grup_id: grupId }] };
+                                }
+                                
+                                // Afegir alumne al curs
+                                const alumneCursId = `ac_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                                await client.query(
+                                    'INSERT INTO alumnes_curs (alumne_curs_id, alumne_id, grup_id, any_curs) VALUES ($1, $2, $3, $4)',
+                                    [alumneCursId, alumneId, grupResult.rows[0].grup_id, '2025-2026']
+                                );
+                            }
                         }
                         
                         const personalId = `pf_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;

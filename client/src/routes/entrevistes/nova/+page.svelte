@@ -9,11 +9,20 @@
   let alumneNom = '';
   let grup = '';
   let curs = '';
+  let email = '';
+  let telefon = '';
+  let tutor = '';
+  let tutorEmail = '';
   let dataEntrevista = '';
   let acords = '';
   let loading = false;
   let error: string | null = null;
   let success = false;
+  
+  // Dades del primer tutor per a la cita
+  let nomFamilia = '';
+  let emailFamilia = '';
+  let telefonFamilia = '';
 
   onMount(() => {
     // Obtener parámetros de la URL
@@ -22,6 +31,29 @@
     alumneNom = urlParams.get('nom') || '';
     grup = urlParams.get('grup') || '';
     curs = urlParams.get('curs') || '';
+    email = urlParams.get('email') || '';
+    telefon = urlParams.get('telefon') || '';
+    tutor = urlParams.get('tutor') || '';
+    tutorEmail = urlParams.get('tutor_email') || '';
+    
+    // Dades del primer tutor per a la cita
+    nomFamilia = urlParams.get('nom_familia') || '';
+    emailFamilia = urlParams.get('email_familia') || '';
+    telefonFamilia = urlParams.get('telefon_familia') || '';
+    
+    console.log('🔍 DEBUG - Parámetros de URL:', {
+      alumneId,
+      alumneNom,
+      grup,
+      curs,
+      email,
+      telefon,
+      tutor,
+      tutorEmail,
+      nomFamilia,
+      emailFamilia,
+      telefonFamilia
+    });
     
     // Establecer fecha actual como predeterminada
     const today = new Date();
@@ -125,16 +157,70 @@
             />
           </div>
         </div>
-        <div class="form-group">
-          <label for="alumne-curs">Curs actual</label>
-          <input 
-            id="alumne-curs"
-            type="text" 
-            bind:value={curs} 
-            readonly 
-            class="input input-readonly"
-          />
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="alumne-curs">Curs actual</label>
+            <input 
+              id="alumne-curs"
+              type="text" 
+              bind:value={curs} 
+              readonly 
+              class="input input-readonly"
+            />
+          </div>
+          {#if email}
+            <div class="form-group">
+              <label for="alumne-email">Email de l'alumne</label>
+              <input 
+                id="alumne-email"
+                type="email" 
+                bind:value={email} 
+                readonly 
+                class="input input-readonly"
+              />
+            </div>
+          {/if}
         </div>
+        {#if telefon || tutor || tutorEmail}
+          <div class="form-grid">
+            {#if telefon}
+              <div class="form-group">
+                <label for="alumne-telefon">Telèfon de l'alumne</label>
+                <input 
+                  id="alumne-telefon"
+                  type="tel" 
+                  bind:value={telefon} 
+                  readonly 
+                  class="input input-readonly"
+                />
+              </div>
+            {/if}
+            {#if tutor}
+              <div class="form-group">
+                <label for="alumne-tutor">Tutor/a</label>
+                <input 
+                  id="alumne-tutor"
+                  type="text" 
+                  bind:value={tutor} 
+                  readonly 
+                  class="input input-readonly"
+                />
+              </div>
+            {/if}
+          </div>
+          {#if tutorEmail}
+            <div class="form-group">
+              <label for="alumne-tutor-email">Email del tutor/a</label>
+              <input 
+                id="alumne-tutor-email"
+                type="email" 
+                bind:value={tutorEmail} 
+                readonly 
+                class="input input-readonly"
+              />
+            </div>
+          {/if}
+        {/if}
       </div>
 
       <!-- Dades de l'entrevista -->

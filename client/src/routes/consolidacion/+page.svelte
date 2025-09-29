@@ -81,6 +81,29 @@
     }
   }
 
+  async function testSpreadsheets() {
+    try {
+      const response = await fetch('/consolidacion/test-spreadsheets', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      console.log('Spreadsheets test result:', data);
+      alert('Resultats dels spreadsheets:\n\n' + JSON.stringify(data.results, null, 2));
+    } catch (error) {
+      console.error('Error testing spreadsheets:', error);
+      alert('Error testing spreadsheets: ' + (error as Error).message);
+    }
+  }
+
   async function inicializarConfiguracion() {
     inicializando = true;
     try {
@@ -142,6 +165,19 @@
       </button>
       <p class="help-text">
         Inicializa la configuración necesaria para la consolidación de entrevistas.
+      </p>
+    </div>
+
+    <div class="form-group">
+      <button
+        onclick={testSpreadsheets}
+        class="btn btn-outline-secondary"
+      >
+        <Icon name="search" size={16} />
+        Test Spreadsheets
+      </button>
+      <p class="help-text">
+        Verifica el estado de los spreadsheets de Google Sheets configurados.
       </p>
     </div>
   </div>

@@ -6,6 +6,8 @@
     configurarHorarios as configurarHorariosAPI,
     obtenirEventosCalendario,
     generarEventosCalendario,
+    obtenirAlumnesTutor,
+    generarEnlaceCalendarioPublico,
     getMe,
     type Me,
     type ProgramadorCitas,
@@ -54,8 +56,11 @@
 
   let alumnes: any[] = [];
   let loadingReserva = false;
+  let enlacePublico = '';
+  let mostrarEnlace = false;
 
   onMount(async () => {
+    console.log('DEBUG page: programador-citas mounted');
     me = await getMe();
     if (me?.role === 'docent') {
       tutorSeleccionat = me.email;
@@ -68,6 +73,9 @@
     await carregarHorarios();
     await carregarAlumnes();
   });
+
+  // Log reactivo del estado del modal
+  $: console.log('DEBUG modal: showReservaForm =', showReservaForm);
 
   async function carregarHorarios() {
     if (!tutorSeleccionat || !fechaSeleccionada) return;
@@ -138,6 +146,7 @@
   function abrirReservaForm(horario: any) {
     reservaForm.fecha = fechaSeleccionada;
     reservaForm.hora = horario.hora;
+    console.log('DEBUG modal: abrirReservaForm', { fechaSeleccionada, horario });
     showReservaForm = true;
   }
 
@@ -149,6 +158,7 @@
 
     try {
       loadingReserva = true;
+      console.log('DEBUG modal: crearReserva -> payload', { ...reservaForm, tutorEmail: tutorSeleccionat });
       await reservarHorario({
         tutorEmail: tutorSeleccionat,
         alumneId: reservaForm.alumne_id,
@@ -162,6 +172,7 @@
       });
 
       toastSuccess('Reserva creada correctament');
+      console.log('DEBUG modal: reserva creada OK');
       showReservaForm = false;
       reservaForm = {
         alumne_id: '',
@@ -176,8 +187,71 @@
       await carregarHorarios();
     } catch (err: any) {
       toastError('Error creant reserva: ' + err.message);
+      console.log('DEBUG modal: error creant reserva', err);
     } finally {
       loadingReserva = false;
+    }
+  }
+
+  // ===== Control de cierre del modal =====
+  function closeModal(reason: string) {
+    console.log('DEBUG modal: closeModal', { reason });
+    showReservaForm = false;
+  }
+
+  function handleOverlayClick(e: MouseEvent) {
+    const target = e.target as HTMLElement;
+    const current = e.currentTarget as HTMLElement;
+    const isOutside = target === current;
+    console.log('DEBUG modal: overlay click', { isOutside, target, current });
+    if (isOutside) {
+      closeModal('overlay');
+    }
+  }
+
+  function handleOverlayKeydown(e: KeyboardEvent) {
+    console.log('DEBUG modal: keydown', { key: e.key });
+    if (e.key === 'Escape') {
+      closeModal('escape');
+    }
+  }
+
+  function handleModalContentClick(e: MouseEvent) {
+    // Evitar que los clics dentro del contenido cierren el modal por propagación
+    e.stopPropagation?.();
+    const t = e.target as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | HTMLElement;
+    console.log('DEBUG modal: content click', { tag: t?.tagName, id: (t as any)?.id, class: (t as any)?.className });
+  }
+
+  function handleModalContentChange(e: Event) {
+    const t = e.target as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
+    const value = (t && 'value' in t) ? (t as any).value : undefined;
+    console.log('DEBUG modal: content change', { tag: t?.tagName, id: (t as any)?.id, name: (t as any)?.name, value });
+  }
+
+  // ===== Cargar alumnos reales =====
+  async function carregarAlumnes() {
+    if (!tutorSeleccionat) return;
+    
+    try {
+      console.log('DEBUG: carregant alumnes per tutor:', tutorSeleccionat);
+      const data = await obtenirAlumnesTutor(tutorSeleccionat);
+      
+      alumnes = data.map((a: any) => ({
+        alumne_id: a.alumne_id,
+        nom: `${a.nom} ${a.cognoms}`.trim(),
+        grup: a.grup,
+        curs: a.curs
+      }));
+      console.log('DEBUG: alumnes carregats:', alumnes);
+    } catch (err: any) {
+      console.error('Error carregant alumnes:', err);
+      toastError('Error carregant alumnes: ' + err.message);
+      // Fallback a datos simulados
+      alumnes = [
+        { alumne_id: '1', nom: 'Alumne 1' },
+        { alumne_id: '2', nom: 'Alumne 2' }
+      ];
     }
   }
 
@@ -206,6 +280,19 @@
   // Recargar horarios cuando cambia la fecha o tutor
   $: if (tutorSeleccionat && fechaSeleccionada) {
     carregarHorarios();
+  }
+
+  // Generar enlace público cuando cambia el tutor
+  $: if (tutorSeleccionat) {
+    enlacePublico = generarEnlaceCalendarioPublico(tutorSeleccionat);
+  }
+
+  function copiarEnlace() {
+    navigator.clipboard.writeText(enlacePublico).then(() => {
+      toastSuccess('Enllaç copiat al porta-retalls');
+    }).catch(() => {
+      toastError('Error copiant l\'enllaç');
+    });
   }
 </script>
 
@@ -257,6 +344,53 @@
 
       <button class="btn btn-primary" onclick={configurarHorarios}>Guardar Configuració</button>
     </div>
+  </div>
+
+  <!-- Enlace público para familias -->
+  <div class="enlace-section">
+    <h2>🔗 Enllaç Públic per a Famílies</h2>
+    <p>Comparteix aquest enllaç amb les famílies perquè puguin reservar cites directament:</p>
+    
+    <div class="enlace-container">
+      <div class="enlace-input">
+        <input 
+          type="text" 
+          value={enlacePublico} 
+          readonly 
+          class="enlace-field"
+          placeholder="Selecciona un tutor per generar l'enllaç"
+        />
+        <button class="btn btn-secondary" onclick={copiarEnlace}>
+          <Icon name="copy" size={16} />
+          Copiar
+        </button>
+      </div>
+      
+      <div class="enlace-actions">
+        <a href={enlacePublico} target="_blank" class="btn btn-success">
+          <Icon name="external-link" size={16} />
+          Obrir Enllaç
+        </a>
+        <button class="btn btn-info" onclick={() => mostrarEnlace = !mostrarEnlace}>
+          <Icon name="info" size={16} />
+          {mostrarEnlace ? 'Amagar' : 'Mostrar'} Instruccions
+        </button>
+      </div>
+    </div>
+
+    {#if mostrarEnlace}
+      <div class="instruccions">
+        <h3>📋 Instruccions per a les famílies:</h3>
+        <ol>
+          <li>Fes clic a "Obrir Enllaç" o copia l'enllaç i obre'l en el navegador</li>
+          <li>Fes clic a "Obrir Calendari de Google"</li>
+          <li>Selecciona un horari disponible</li>
+          <li>Completa les dades de contacte</li>
+          <li>Confirma la reserva</li>
+        </ol>
+        <p><strong>Nota:</strong> Les famílies necessitaran tenir una compte de Google per reservar cites.</p>
+      </div>
+    {/if}
   </div>
 
   <!-- Vista de horarios -->
@@ -336,11 +470,11 @@
 
   <!-- Modal de reserva -->
   {#if showReservaForm}
-    <div class="modal-overlay" role="dialog" aria-modal="true" tabindex="-1" onclick={() => showReservaForm = false} onkeydown={(e) => e.key === 'Escape' && (showReservaForm = false)}>
-      <div class="modal-content" role="document">
+    <div class="modal-overlay" role="dialog" aria-modal="true" tabindex="-1" on:click={handleOverlayClick} on:keydown={handleOverlayKeydown}>
+      <div class="modal-content" role="document" on:click={handleModalContentClick} on:change={handleModalContentChange}>
         <div class="modal-header">
           <h3>Nova Reserva</h3>
-          <button class="close-btn" onclick={() => showReservaForm = false}>×</button>
+          <button class="close-btn" on:click={() => { console.log('DEBUG modal: close button'); closeModal('close-button'); }}>×</button>
         </div>
         
         <div class="modal-body">
@@ -428,6 +562,97 @@
     color: #1e293b;
     font-size: 1.8rem;
     font-weight: 700;
+  }
+
+  .enlace-section {
+    background: white;
+    border-radius: 16px;
+    padding: 30px;
+    margin-bottom: 30px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  }
+
+  .enlace-section h2 {
+    margin: 0 0 15px 0;
+    color: #1e293b;
+    font-size: 1.8rem;
+    font-weight: 700;
+  }
+
+  .enlace-section p {
+    margin: 0 0 20px 0;
+    color: #64748b;
+    font-size: 1.1rem;
+  }
+
+  .enlace-container {
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+
+  .enlace-input {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+  }
+
+  .enlace-field {
+    flex: 1;
+    padding: 12px 16px;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 14px;
+    background: white;
+    font-family: 'Courier New', monospace;
+  }
+
+  .enlace-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .instruccions {
+    background: #f0f9ff;
+    border: 1px solid #0ea5e9;
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 20px;
+  }
+
+  .instruccions h3 {
+    margin: 0 0 15px 0;
+    color: #0c4a6e;
+    font-size: 1.2rem;
+  }
+
+  .instruccions ol {
+    margin: 0 0 15px 0;
+    padding-left: 20px;
+    color: #075985;
+  }
+
+  .instruccions li {
+    margin-bottom: 8px;
+    line-height: 1.6;
+  }
+
+  .instruccions p {
+    margin: 0;
+    color: #075985;
+    font-size: 14px;
+  }
+
+  .btn-info {
+    background: linear-gradient(135deg, #0ea5e9, #0284c7);
+    color: white;
+  }
+
+  .btn-info:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(14, 165, 233, 0.3);
   }
 
   .config-form {

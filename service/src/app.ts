@@ -13,6 +13,7 @@ import consolidacion from './routes/consolidacion.js';
 import dadesPersonals from './routes/dades-personals.js';
 import emails from './routes/emails.js';
 import importComplet from './routes/import-complet.js';
+import calendarioPublico from './routes/calendario-publico.js';
 
 export function createApp() {
   const app = express();
@@ -47,6 +48,7 @@ export function createApp() {
   app.use('/consolidacion', consolidacion);
   app.use('/dades-personals', dadesPersonals);
   app.use('/emails', emails);
+  app.use('/calendario-publico', calendarioPublico);
   app.get('/health', (_req, res) => res.json({ status: 'ok' }));
   
   // Endpoint para verificar estado de autenticación

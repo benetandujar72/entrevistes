@@ -276,9 +276,28 @@ export class SheetsRepo {
         
         if (values.length === 0) continue;
 
-        const header = values[0] || [];
-        const headerLc = header.map(h => (h || '').toString().trim().toLowerCase());
-        console.log(`Headers en ${tab}:`, headerLc);
+        // Buscar headers en las primeras filas (pueden estar en fila 0, 1, o 2)
+        let headerRowIndex = 0;
+        let header = values[0] || [];
+        let headerLc = header.map(h => (h || '').toString().trim().toLowerCase());
+        
+        // Si la primera fila está vacía o no tiene headers útiles, buscar en las siguientes
+        if (headerLc.every(h => h === '' || h.length < 2)) {
+          for (let i = 1; i < Math.min(values.length, 3); i++) {
+            const testHeader = values[i] || [];
+            const testHeaderLc = testHeader.map(h => (h || '').toString().trim().toLowerCase());
+            // Si esta fila tiene headers útiles (contiene palabras como "nom", "data", etc.)
+            if (testHeaderLc.some(h => h.includes('nom') || h.includes('data') || h.includes('alumne') || h.includes('entrevista'))) {
+              headerRowIndex = i;
+              header = testHeader;
+              headerLc = testHeaderLc;
+              console.log(`[SHEETS] Headers encontrados en fila ${i} para ${tab}`);
+              break;
+            }
+          }
+        }
+        
+        console.log(`Headers en ${tab} (fila ${headerRowIndex}):`, headerLc);
 
         const idx = (...keys: string[]) => {
           for (const k of keys) {
@@ -288,35 +307,58 @@ export class SheetsRepo {
           return -1;
         };
 
-        const iId = idx('id', 'entrevistaid');
-        const iAlumne = idx('alumneid', 'alumne_id', 'alumne', 'alumne');
-        const iAny = idx('anycurs', 'any', 'curs', 'any_curs');
-        const iData = idx('data', 'fecha', 'date');
-        const iAcords = idx('acords', 'acuerdos', 'notes', 'observacions');
-        const iAuthor = idx('usuariCreadorId'.toLowerCase(), 'autor', 'creador', 'usuari_creador_id');
+        const iId = idx('id', 'entrevistaid', 'entrevista_id');
+        const iAlumne = idx('alumneid', 'alumne_id', 'alumne', 'alumne/a', 'nom', 'nombre', 'nom i cognoms', 'alumne_nom');
+        const iAny = idx('anycurs', 'any', 'curs', 'any_curs', 'curs');
+        const iData = idx('data', 'fecha', 'date', 'data i hora', 'dia');
+        const iAcords = idx('acords', 'acuerdos', 'notes', 'observacions', 'descripcio', 'descripció');
+        const iAuthor = idx('usuariCreadorId'.toLowerCase(), 'autor', 'creador', 'usuari_creador_id', 'persones reunides', 'persones', 'participants');
 
         console.log(`Índices en ${tab}:`, { iId, iAlumne, iAny, iData, iAcords, iAuthor });
 
         const entrevistes: any[] = [];
-        for (let r = 1; r < values.length; r++) {
+        // Comenzar a procesar desde la fila siguiente a los headers
+        for (let r = headerRowIndex + 1; r < values.length; r++) {
           const row = values[r];
           if (!row || row.length === 0) continue;
           
           // Buscar cualquier campo que pueda ser un identificador de alumno
-          const alumneId = iAlumne >= 0 ? row[iAlumne] : 
-                          (row[0] && row[0].toString().trim()) || 
-                          (row[1] && row[1].toString().trim()) || 
-                          undefined;
+          let alumneId = undefined;
           
-          // Si no hay alumneId, intentar usar el primer campo no vacío
-          if (!alumneId) {
-            for (let i = 0; i < row.length; i++) {
-              if (row[i] && row[i].toString().trim()) {
-                // Usar este campo como alumneId
+          if (iAlumne >= 0) {
+            // Si tenemos un índice válido para alumne, usarlo
+            alumneId = row[iAlumne];
+          } else {
+            // Si no tenemos índice válido, buscar en las primeras columnas
+            // Priorizar columnas que puedan contener nombres (no números simples)
+            for (let i = 0; i < Math.min(row.length, 5); i++) {
+              const cellValue = row[i] ? row[i].toString().trim() : '';
+              if (cellValue && 
+                  !/^\d+$/.test(cellValue) && // No es solo un número
+                  cellValue.length > 2 && // Tiene longitud mínima
+                  /[a-zA-Z]/.test(cellValue)) { // Contiene letras
+                alumneId = cellValue;
+                console.log(`[SHEETS] Usando columna ${i} como nombre de alumno: "${cellValue}"`);
                 break;
               }
             }
-            continue; // Saltar esta fila si no encontramos un identificador
+          }
+          
+          // Si aún no tenemos alumneId, usar el primer campo no vacío como último recurso
+          if (!alumneId) {
+            for (let i = 0; i < row.length; i++) {
+              const cellValue = row[i] ? row[i].toString().trim() : '';
+              if (cellValue) {
+                alumneId = cellValue;
+                console.log(`[SHEETS] Usando columna ${i} como último recurso: "${cellValue}"`);
+                break;
+              }
+            }
+          }
+          
+          if (!alumneId) {
+            console.log(`[SHEETS] Saltando fila ${r} - no se encontró identificador de alumno`);
+            continue;
           }
 
           entrevistes.push({

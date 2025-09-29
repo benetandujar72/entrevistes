@@ -128,6 +128,55 @@
         }
     });
 
+    // Filtros para ignorar errores provocados por extensiones del navegador (e.g., chrome extensions)
+    onMount(() => {
+        try {
+            const shouldIgnore = (msg: string, src?: string) => {
+                const m = String(msg || '').toLowerCase();
+                const s = String(src || '').toLowerCase();
+                return (
+                    m.includes('a listener indicated an asynchronous response by returning true, but the message channel closed') ||
+                    m.includes('input must have uuid') ||
+                    m.includes('classifier') ||
+                    s.startsWith('chrome-extension://')
+                );
+            };
+
+            const errorListener = (ev: ErrorEvent) => {
+                const msg = String(ev?.message || (ev as any)?.error?.message || '');
+                const src = String(ev?.filename || '');
+                if (shouldIgnore(msg, src)) {
+                    ev.preventDefault?.();
+                    ev.stopImmediatePropagation?.();
+                    return false as any;
+                }
+            };
+            window.addEventListener('error', errorListener, true);
+
+            const rejectionListener = (ev: PromiseRejectionEvent) => {
+                const reason: any = (ev as any)?.reason;
+                const msg = String((reason && (reason.message || reason)) || '');
+                if (shouldIgnore(msg)) {
+                    ev.preventDefault?.();
+                }
+            };
+            window.addEventListener('unhandledrejection', rejectionListener, true);
+
+            const originalConsoleError = (console.error as unknown) as (...args: any[]) => void;
+            (console as any).error = (...args: any[]) => {
+                const msg = args.map((a: any) => (typeof a === 'string' ? a : (a && a.message) || '')).join(' ');
+                if (shouldIgnore(msg)) return;
+                originalConsoleError(...args);
+            };
+
+            return () => {
+                window.removeEventListener('error', errorListener, true);
+                window.removeEventListener('unhandledrejection', rejectionListener, true);
+                (console as any).error = originalConsoleError;
+            };
+        } catch {}
+    });
+
     function toggleTheme() {
         dark = !dark;
         document.documentElement.dataset.theme = dark ? 'dark' : 'light';
@@ -221,6 +270,10 @@
 				<a href="/entrevistes" class="nav-link" class:active={$page.url.pathname.startsWith('/entrevistes')}>
 					<Icon name="notes" size={18} />
 					{#if !sidebarCollapsed}<span>Entrevistes</span>{/if}
+				</a>
+				<a href="/gestio-cites" class="nav-link" class:active={$page.url.pathname.startsWith('/gestio-cites')}>
+					<Icon name="calendar" size={18} />
+					{#if !sidebarCollapsed}<span>Gestió de Cites</span>{/if}
 				</a>
 			</div>
 			
