@@ -758,9 +758,11 @@ router.get('/tutor/:tutorEmail/alumnes', requireAuth(), async (req: Request, res
       return res.status(403).json({ error: 'No tens permisos per veure aquests alumnes' });
     }
 
-    // Obtener alumnos del tutor
+    // Obtener alumnos del tutor con datos de contacto
     const result = await query(`
-      SELECT DISTINCT a.alumne_id, a.nom, a.cognoms, a.grup, a.curs
+      SELECT DISTINCT a.alumne_id, a.nom, a.cognoms, a.grup, a.curs,
+             a.tutor1_nom, a.tutor1_email, a.tutor1_tel,
+             a.tutor2_nom, a.tutor2_email, a.tutor2_tel
       FROM alumnes a
       JOIN tutories_alumne ta ON a.alumne_id = ta.alumne_id
       WHERE ta.tutor_email = $1 AND ta.any_curs = '2025-2026'

@@ -227,7 +227,13 @@
         alumne_id: a.alumne_id,
         nom: `${a.nom} ${a.cognoms}`.trim(),
         grup: a.grup,
-        curs: a.curs
+        curs: a.curs,
+        tutor1_nom: a.tutor1_nom || '',
+        tutor1_email: a.tutor1_email || '',
+        tutor1_tel: a.tutor1_tel || '',
+        tutor2_nom: a.tutor2_nom || '',
+        tutor2_email: a.tutor2_email || '',
+        tutor2_tel: a.tutor2_tel || ''
       }));
       console.log('DEBUG: alumnes carregats:', alumnes);
     } catch (err: any) {
@@ -263,9 +269,44 @@
     return colores[dia] || '#6b7280';
   }
 
+  // Función para cargar datos de contacto cuando se selecciona un alumno
+  function carregarDadesContacteAlumne() {
+    if (!reservaForm.alumne_id) {
+      // Limpiar datos si no hay alumno seleccionado
+      reservaForm.nom_familia = '';
+      reservaForm.email_familia = '';
+      reservaForm.telefon_familia = '';
+      return;
+    }
+
+    const alumne = alumnes.find(a => a.alumne_id === reservaForm.alumne_id);
+    if (alumne) {
+      // Usar datos del primer tutor por defecto
+      reservaForm.nom_familia = alumne.tutor1_nom || '';
+      reservaForm.email_familia = alumne.tutor1_email || '';
+      reservaForm.telefon_familia = alumne.tutor1_tel || '';
+      
+      console.log('DEBUG: Dades de contacte carregades:', {
+        nom: reservaForm.nom_familia,
+        email: reservaForm.email_familia,
+        telefon: reservaForm.telefon_familia
+      });
+    }
+  }
+
   // Recargar horarios cuando cambia la fecha o tutor
   $: if (tutorSeleccionat && fechaSeleccionada) {
     carregarHorarios();
+  }
+
+  // Cargar alumnos cuando cambia el tutor
+  $: if (tutorSeleccionat) {
+    carregarAlumnes();
+  }
+
+  // Cargar datos de contacto cuando cambia el alumno seleccionado
+  $: if (reservaForm.alumne_id) {
+    carregarDadesContacteAlumne();
   }
 
   // Generar enlace público cuando cambia el tutor
