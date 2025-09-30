@@ -91,20 +91,6 @@
     }
   }
 
-  async function carregarAlumnes() {
-    if (!tutorSeleccionat) return;
-    
-    try {
-      // Simular carga de alumnos - en producción vendría del backend
-      alumnes = [
-        { alumne_id: '1', nom: 'Alumne 1' },
-        { alumne_id: '2', nom: 'Alumne 2' }
-      ];
-    } catch (err: any) {
-      toastError('Error carregant alumnes: ' + err.message);
-    }
-  }
-
   async function configurarHorarios() {
     if (!configuracionHorarios.fecha_inicio || !configuracionHorarios.fecha_fin) {
       toastError('Si us plau, selecciona les dates d\'inici i fi');
@@ -328,7 +314,7 @@
                 <input 
                   type="checkbox" 
                   bind:checked={horario.activo}
-                  onchange={() => toggleHorario(index)}
+                  on:change={() => toggleHorario(index)}
                 />
                 <div class="horario-info">
                   <span class="dia" style="color: {getDiaColor(horario.dia)};">
@@ -342,7 +328,7 @@
         </div>
       </div>
 
-      <button class="btn btn-primary" onclick={configurarHorarios}>Guardar Configuració</button>
+      <button class="btn btn-primary" on:click={configurarHorarios}>Guardar Configuració</button>
     </div>
   </div>
 
@@ -360,7 +346,7 @@
           class="enlace-field"
           placeholder="Selecciona un tutor per generar l'enllaç"
         />
-        <button class="btn btn-secondary" onclick={copiarEnlace}>
+        <button class="btn btn-secondary" on:click={copiarEnlace}>
           <Icon name="copy" size={16} />
           Copiar
         </button>
@@ -371,7 +357,7 @@
           <Icon name="external-link" size={16} />
           Obrir Enllaç
         </a>
-        <button class="btn btn-info" onclick={() => mostrarEnlace = !mostrarEnlace}>
+        <button class="btn btn-info" on:click={() => mostrarEnlace = !mostrarEnlace}>
           <Icon name="info" size={16} />
           {mostrarEnlace ? 'Amagar' : 'Mostrar'} Instruccions
         </button>
@@ -443,7 +429,7 @@
                   <span class="hora">{horario.hora}</span>
                   <span class="estat disponible">Disponible</span>
                 </div>
-                <button class="btn btn-success btn-sm" onclick={() => abrirReservaForm(horario)}>Reservar</button>
+                <button class="btn btn-success btn-sm" on:click={() => abrirReservaForm(horario)}>Reservar</button>
               </div>
             {/each}
           </div>
@@ -532,8 +518,8 @@
         </div>
         
         <div class="modal-footer">
-          <button class="btn btn-secondary" onclick={() => showReservaForm = false}>Cancel·lar</button>
-          <button class="btn btn-primary" onclick={crearReserva} disabled={loadingReserva}>{loadingReserva ? 'Creant…' : 'Crear Reserva'}</button>
+          <button class="btn btn-secondary" on:click={() => showReservaForm = false}>Cancel·lar</button>
+          <button class="btn btn-primary" on:click={crearReserva} disabled={loadingReserva}>{loadingReserva ? 'Creant…' : 'Crear Reserva'}</button>
         </div>
       </div>
     </div>

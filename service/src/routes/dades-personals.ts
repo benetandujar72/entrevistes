@@ -983,7 +983,7 @@ router.post('/configuracion-horarios', requireAuth(), async (req: Request, res: 
       return res.status(401).json({ error: 'No autenticat' });
     }
 
-    const { tutor_email, nombre_configuracion, fecha_inicio, fecha_fin, duracion_cita, dias_semana } = req.body;
+    const { tutor_email, nombre, fecha_inicio, fecha_fin, duracion_cita, dias_semana } = req.body;
 
     // Verificar permisos
     if (user.role === 'docent' && user.email !== tutor_email) {
@@ -991,9 +991,25 @@ router.post('/configuracion-horarios', requireAuth(), async (req: Request, res: 
     }
 
     // Validar datos
-    if (!tutor_email || !nombre_configuracion || !fecha_inicio || !fecha_fin || !dias_semana) {
+    if (!tutor_email || !nombre || !fecha_inicio || !fecha_fin || !dias_semana) {
       return res.status(400).json({ error: 'Dades de configuració incompletes' });
     }
+
+    // Crear la tabla si no existe
+    await query(`
+      CREATE TABLE IF NOT EXISTS configuracion_horarios_tutor (
+        id SERIAL PRIMARY KEY,
+        tutor_email VARCHAR(255) NOT NULL,
+        nombre_configuracion VARCHAR(255) NOT NULL,
+        fecha_inicio DATE NOT NULL,
+        fecha_fin DATE NOT NULL,
+        duracion_cita INTEGER DEFAULT 30,
+        dias_semana JSONB NOT NULL,
+        activo BOOLEAN DEFAULT true,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
 
     // Insertar nueva configuración
     const result = await query(`
@@ -1002,7 +1018,7 @@ router.post('/configuracion-horarios', requireAuth(), async (req: Request, res: 
         duracion_cita, dias_semana
       ) VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING id
-    `, [tutor_email, nombre_configuracion, fecha_inicio, fecha_fin, duracion_cita, JSON.stringify(dias_semana)]);
+    `, [tutor_email, nombre, fecha_inicio, fecha_fin, duracion_cita, JSON.stringify(dias_semana)]);
 
     res.json({
       message: 'Configuració creada correctament',
@@ -1030,6 +1046,19 @@ router.get('/configuracion-horarios/:tutorEmail', requireAuth(), async (req: Req
       return res.status(403).json({ error: 'No tens permisos per veure aquestes configuracions' });
     }
 
+    // Verificar si la tabla existe, si no, devolver array vacío
+    const tableExists = await query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'configuracion_horarios_tutor'
+      );
+    `);
+
+    if (!tableExists.rows[0].exists) {
+      return res.json([]);
+    }
+
     const result = await query(`
       SELECT id, nombre_configuracion, fecha_inicio, fecha_fin, 
              duracion_cita, dias_semana, activo, created_at
@@ -1041,7 +1070,7 @@ router.get('/configuracion-horarios/:tutorEmail', requireAuth(), async (req: Req
     // Parsear JSON de días de semana
     const configuraciones = result.rows.map(row => ({
       ...row,
-      dias_semana: JSON.parse(row.dias_semana)
+      dias_semana: typeof row.dias_semana === 'string' ? JSON.parse(row.dias_semana) : row.dias_semana
     }));
 
     res.json(configuraciones);

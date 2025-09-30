@@ -1,0 +1,28 @@
+# CONFIGURACIÓN DE GOOGLE CALENDAR API
+# Copia este contenido al archivo service/.env
+
+DATABASE_URL=postgresql://postgres:postgres@db:5432/entrevistes
+
+# Google Calendar API - CONFIGURADO CON TUS CREDENCIALES REALES
+GOOGLE_CALENDAR_EMAIL=const-router-router@avaluacions.iam.gserviceaccount.com
+GOOGLE_CALENDAR_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCuwur5+iaN0Jae\nS5RVPKXUhmuhEUD6es95nflkL7v2IchGY8NVLocDKnhA4Kp/a/lcJY8m0gfhPRMU\nUgiB1Ap/KTW33baMnQhhTMi6Pc8aEL9eAR0GV61rOo6/yZ8G+j7RzNrkmzzo75xt\nOcwxlnPGmAJTkaYjYQIbhhIabG8oxRY3Vo0mt+mqGII2hakdsZDnSBgOl1S24ymI\nAV8mSgaGdzzmTiCaoQuaPMOjhbnsdtOZJpWBIa4+yoJroymx7CqC47nBGa/c2Qt/\nHwSA3pHEWQo5BLK5DTgaVkRKkQRtmjhiJ1mcLM1wHoKdkenHtLBtc1ndJkBr77hP\nFz2CdZSLAgMBAAECggEAIMXIzuwMQtf1BuZhgMKIzpwOnvvfVZmmQsZPOGyDMRsQ\ntbKLtPOuufdC6de34YFcF92rRLpqY+DSLSNdGQuslEAkJMDdNO1V3vlJQzPIHLk7\nSeOnj8LtcIhgsLKcsfBHy4xBGFHMUFpu2UTXeA0g1QM4nHdZ0pSkkojH6FChX+GW\nQDgWxxUa+N90YVp+t1LnSWnZjba9a7cQolbwaaIm/B5qrm9640Ap6BwWk149NwIt\nsmmN40ZhNPzv1kXkzNy8SYvu/OZ4dvjEuUCmfLJczDGLWrIEWo8Y4AhYKW8xl320\nryRZtG4btWfDvHeLZ0vPaM6BvC3Ok1ijp9OgnTvWUQKBgQDksOT1FK2aZJnskTB4\n22MxfCXiQY0SnFgmGi4vE4kTCTZIFcVT6c2fOHYLYKdUZTBDVmJVBSRelr8w5PA7\nyd1vXLYS4LuZvs4vTRyvNxS3vA3yrTmNC2fPQ21PdnoiGWp5wPK+d8DAZn58L7Zo\nuA3dJ7US7TECzdNalXTU2skshwKBgQDDoWP9/OEmB1Q7ZMiLFNJL/5X2fKwKpRf7\nsVKmwBa3SPuoxH3GF97bEQocdu03Io3+2wHm+0vpz6jmj16rsXN7fKje5EDQDppC\ngvehyhVO6x/RGB38oZ4sKL8K3wSISZ6ZE5T9RtZH3xnwmDLoxti4GOtCLH/T0bO8\nvdtj7fG83QKBgF9oAQzRxJ8tqx2LcMpq1FYXsgJTUJRcD1ZOA8h2APClHjUyh/E7\nECKFvpF+kDBgSqM9Dabkj0i64SZ3zFVVIQFNj1QO15ULih8nr3jVpNoGJVeBtwnF\noVhRi+/jwI4rRkVnHp4hfZOG7uvGR/YmGvqRjzRHKfQ+hBc9VNFcOSNPAoGALQ/n\n8IFne1ME3AmDCEZrioX9DSH6nxkYRSm7WB23HdD55w4byp2FAAEUyym5ypFzE9lu\nvr3z5o+m4DT2IaZma3NzkqQRKduzPM7eK65Y6izOz2M2xRKVVKauGtr0OFB879XK\n4+yFP1jsqLbmQyhKk11qE3wclbYgKMGy33nXzSECgYEAg4aExQGilNPEvITMr6Nq\nNS2sWQypMAKGe7qgzy6Eua4MQnvaNodZrtfXYM9Tf+2YTF/k/BIWICFAIb+Xctr+\ntnOXsyUG+1+j6wNFSkwr8IGakNIg6R47F21puMPUFUXUKiNKDfrAVgxtlX4kYoRd\nA/u+FVjsTc72ZB4vhv7eNyk=\n-----END PRIVATE KEY-----\n"
+GOOGLE_CALENDAR_ID=primary
+GOOGLE_CALENDAR_TIMEZONE=Europe/Madrid
+
+# Email (SMTP) - Opcional
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_USER=tu_email@gmail.com
+EMAIL_PASS=tu_app_password
+EMAIL_FROM=tu_email@gmail.com
+
+# Backend
+PORT=8081
+NODE_ENV=development
+
+# INSTRUCCIONES:
+# 1. Copia todo este contenido
+# 2. Crea el archivo service/.env
+# 3. Pega el contenido en el archivo
+# 4. Guarda el archivo
+# 5. Reinicia Docker: docker compose down && docker compose up -d
