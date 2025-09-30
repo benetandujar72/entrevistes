@@ -63,23 +63,121 @@
   }
 
   async function carregarConfiguracions() {
-    // Implementar carga de configuraciones
-    console.log('Carregant configuracions...');
+    if (!me?.email) return;
+    
+    try {
+      const response = await fetch(`/api/dades-personals/configuracion-horarios/${me.email}`, {
+        headers: { ...authHeaders() }
+      });
+      
+      if (response.ok) {
+        const configuracions = await response.json();
+        console.log('Configuracions carregades:', configuracions);
+        // Aquí podrías cargar la última configuración activa
+        if (configuracions.length > 0) {
+          const ultimaConfig = configuracions[0];
+          configuracionHorarios = {
+            nombre: ultimaConfig.nombre_configuracion || '',
+            fecha_inicio: ultimaConfig.fecha_inicio || '',
+            fecha_fin: ultimaConfig.fecha_fin || '',
+            duracion_cita: ultimaConfig.duracion_cita || 30,
+            dias_semana: ultimaConfig.dias_semana || {
+              lunes: { activo: false, horarios: [] },
+              martes: { activo: false, horarios: [] },
+              miercoles: { activo: false, horarios: [] },
+              jueves: { activo: false, horarios: [] },
+              viernes: { activo: false, horarios: [] }
+            }
+          };
+        }
+      }
+    } catch (error) {
+      console.error('Error carregant configuracions:', error);
+    }
   }
 
   async function carregarHorariosTutor() {
-    // Implementar carga de horarios específicos
-    console.log('Carregant horarios tutor...');
+    if (!me?.email) return;
+    
+    try {
+      // Crear la tabla si no existe y cargar horarios
+      const response = await fetch(`/api/dades-personals/horarios-tutor/${me.email}`, {
+        headers: { ...authHeaders() }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        horariosTutor = data.horarios || [];
+        console.log('Horarios tutor carregats:', horariosTutor);
+      } else {
+        // Si no existe el endpoint, crear horarios desde la configuración
+        await crearHorariosDesdeConfiguracion();
+      }
+    } catch (error) {
+      console.error('Error carregant horarios tutor:', error);
+      // Fallback: crear horarios desde configuración
+      await crearHorariosDesdeConfiguracion();
+    }
+  }
+
+  async function crearHorariosDesdeConfiguracion() {
+    if (!me?.email) return;
+    
+    const horarios = [];
+    const dias = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes'];
+    
+    dias.forEach(dia => {
+      const configDia = configuracionHorarios.dias_semana[dia];
+      if (configDia.activo && configDia.horarios.length > 0) {
+        configDia.horarios.forEach(horario => {
+          horarios.push({
+            dia: dia,
+            hora_inicio: horario.inicio,
+            hora_fin: horario.fin,
+            activo: horario.activo
+          });
+        });
+      }
+    });
+    
+    horariosTutor = horarios;
+    console.log('Horarios creats des de configuració:', horariosTutor);
   }
 
   async function carregarCitasProgramadas() {
-    // Implementar carga de citas
-    console.log('Carregant cites programades...');
+    if (!me?.email) return;
+    
+    try {
+      const response = await fetch(`/api/dades-personals/cites-calendari/${me.email}`, {
+        headers: { ...authHeaders() }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        citasProgramadas = data.cites || [];
+        console.log('Cites programades carregades:', citasProgramadas);
+      }
+    } catch (error) {
+      console.error('Error carregant cites programades:', error);
+    }
   }
 
   async function carregarBorradoresEntrevista() {
-    // Implementar carga de borradores
-    console.log('Carregant borradors entrevista...');
+    if (!me?.email) return;
+    
+    try {
+      const response = await fetch(`/api/dades-personals/borradores-entrevista/${me.email}`, {
+        headers: { ...authHeaders() }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        borradoresEntrevista = data.borradores || [];
+        console.log('Borradors entrevista carregats:', borradoresEntrevista);
+      }
+    } catch (error) {
+      console.error('Error carregant borradors entrevista:', error);
+    }
   }
 
   function afegirHorari(dia: string) {
@@ -163,6 +261,99 @@
       'viernes': '#8b5cf6'
     };
     return colores[dia] || '#6b7280';
+  }
+
+  // Funciones para gestión de borradores
+  async function crearBorradorEntrevista(citaId: string, alumneId: string) {
+    if (!me?.email) return;
+    
+    try {
+      const response = await fetch('/api/dades-personals/borradores-entrevista', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...authHeaders()
+        },
+        body: JSON.stringify({
+          cita_id: citaId,
+          alumne_id: alumneId,
+          tutor_email: me.email,
+          fecha_entrevista: new Date().toISOString(),
+          observaciones: '',
+          puntos_tratados: '',
+          acuerdos: '',
+          seguimiento: ''
+        })
+      });
+
+      if (response.ok) {
+        toastSuccess('Borrador d\'entrevista creat correctament');
+        await carregarBorradoresEntrevista();
+      } else {
+        const error = await response.json();
+        throw new Error(error.error || 'Error creant borrador');
+      }
+    } catch (error: any) {
+      console.error('Error creant borrador:', error);
+      toastError('Error creant borrador: ' + error.message);
+    }
+  }
+
+  async function actualizarBorrador(borradorId: string, datos: any) {
+    try {
+      const response = await fetch(`/api/dades-personals/borradores-entrevista/${borradorId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...authHeaders()
+        },
+        body: JSON.stringify(datos)
+      });
+
+      if (response.ok) {
+        toastSuccess('Borrador actualitzat correctament');
+        await carregarBorradoresEntrevista();
+      } else {
+        const error = await response.json();
+        throw new Error(error.error || 'Error actualitzant borrador');
+      }
+    } catch (error: any) {
+      console.error('Error actualitzant borrador:', error);
+      toastError('Error actualitzant borrador: ' + error.message);
+    }
+  }
+
+  // Variables para edición de borradores
+  let borradorEditant: any = null;
+  let mostrarModalBorrador = false;
+
+  function editarBorrador(borrador: any) {
+    borradorEditant = { ...borrador };
+    mostrarModalBorrador = true;
+  }
+
+  function veureBorrador(borrador: any) {
+    borradorEditant = { ...borrador };
+    mostrarModalBorrador = true;
+  }
+
+  function tancarModalBorrador() {
+    mostrarModalBorrador = false;
+    borradorEditant = null;
+  }
+
+  async function guardarBorrador() {
+    if (!borradorEditant?.id) return;
+    
+    await actualizarBorrador(borradorEditant.id, {
+      observaciones: borradorEditant.observaciones,
+      puntos_tratados: borradorEditant.puntos_tratados,
+      acuerdos: borradorEditant.acuerdos,
+      seguimiento: borradorEditant.seguimiento,
+      estado: 'completada'
+    });
+    
+    tancarModalBorrador();
   }
 </script>
 
@@ -393,7 +584,10 @@
                       <Icon name="edit" size={14} />
                       Editar
                     </button>
-                    <button class="btn btn-success btn-sm">
+                    <button 
+                      class="btn btn-success btn-sm"
+                      on:click={() => crearBorradorEntrevista(cita.id, cita.alumne_id)}
+                    >
                       <Icon name="file-text" size={14} />
                       Crear Entrevista
                     </button>
@@ -429,11 +623,17 @@
                     <p><strong>Alumne:</strong> {borrador.alumne_id}</p>
                   </div>
                   <div class="borrador-actions">
-                    <button class="btn btn-primary btn-sm">
+                    <button 
+                      class="btn btn-primary btn-sm"
+                      on:click={() => editarBorrador(borrador)}
+                    >
                       <Icon name="edit" size={14} />
                       Completar
                     </button>
-                    <button class="btn btn-secondary btn-sm">
+                    <button 
+                      class="btn btn-secondary btn-sm"
+                      on:click={() => veureBorrador(borrador)}
+                    >
                       <Icon name="eye" size={14} />
                       Veure
                     </button>
@@ -444,6 +644,77 @@
           {/if}
         </div>
       {/if}
+    </div>
+  {/if}
+
+  <!-- Modal para editar borradores -->
+  {#if mostrarModalBorrador && borradorEditant}
+    <div class="modal-overlay" on:click={tancarModalBorrador}>
+      <div class="modal-content" on:click|stopPropagation>
+        <div class="modal-header">
+          <h2>📝 {borradorEditant.estado === 'borrador' ? 'Completar' : 'Veure'} Entrevista</h2>
+          <button class="btn-close" on:click={tancarModalBorrador}>
+            <Icon name="x" size={20} />
+          </button>
+        </div>
+        
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Observacions:</label>
+            <textarea 
+              bind:value={borradorEditant.observaciones}
+              class="input"
+              rows="4"
+              placeholder="Observacions generals de l'entrevista..."
+              disabled={borradorEditant.estado !== 'borrador'}
+            ></textarea>
+          </div>
+          
+          <div class="form-group">
+            <label>Punts Tractats:</label>
+            <textarea 
+              bind:value={borradorEditant.puntos_tratados}
+              class="input"
+              rows="4"
+              placeholder="Punts principals que s'han tractat..."
+              disabled={borradorEditant.estado !== 'borrador'}
+            ></textarea>
+          </div>
+          
+          <div class="form-group">
+            <label>Acords:</label>
+            <textarea 
+              bind:value={borradorEditant.acuerdos}
+              class="input"
+              rows="3"
+              placeholder="Acords presos durant l'entrevista..."
+              disabled={borradorEditant.estado !== 'borrador'}
+            ></textarea>
+          </div>
+          
+          <div class="form-group">
+            <label>Seguiment:</label>
+            <textarea 
+              bind:value={borradorEditant.seguimiento}
+              class="input"
+              rows="3"
+              placeholder="Accions de seguiment necessàries..."
+              disabled={borradorEditant.estado !== 'borrador'}
+            ></textarea>
+          </div>
+        </div>
+        
+        <div class="modal-footer">
+          <button class="btn btn-secondary" on:click={tancarModalBorrador}>
+            Cancel·lar
+          </button>
+          {#if borradorEditant.estado === 'borrador'}
+            <button class="btn btn-primary" on:click={guardarBorrador}>
+              Guardar i Completar
+            </button>
+          {/if}
+        </div>
+      </div>
     </div>
   {/if}
 </div>
@@ -798,5 +1069,104 @@
   .btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+  }
+
+  /* Modal styles */
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+
+  .modal-content {
+    background: var(--card-bg);
+    border-radius: 12px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .modal-header h2 {
+    margin: 0;
+    color: var(--fg);
+  }
+
+  .btn-close {
+    background: none;
+    border: none;
+    color: var(--fg-secondary);
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+  }
+
+  .btn-close:hover {
+    background: var(--bg-secondary);
+    color: var(--fg);
+  }
+
+  .modal-body {
+    padding: 1.5rem;
+  }
+
+  .modal-body .form-group {
+    margin-bottom: 1.5rem;
+  }
+
+  .modal-body label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: var(--fg);
+  }
+
+  .modal-body textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: inherit;
+    resize: vertical;
+  }
+
+  .modal-body textarea:focus {
+    outline: none;
+    border-color: var(--primary-600);
+    box-shadow: 0 0 0 3px var(--primary-100);
+  }
+
+  .modal-body textarea:disabled {
+    background: var(--bg-secondary);
+    color: var(--fg-secondary);
+    cursor: not-allowed;
+  }
+
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    padding: 1.5rem;
+    border-top: 1px solid var(--border);
   }
 </style>

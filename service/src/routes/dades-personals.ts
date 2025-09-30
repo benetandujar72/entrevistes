@@ -1296,4 +1296,245 @@ function generarSlotsTiempo(horaInicio: string, horaFin: string, duracionMinutos
   return slots;
 }
 
+// GET /dades-personals/horarios-tutor/:tutorEmail - Obtener horarios específicos del tutor
+router.get('/horarios-tutor/:tutorEmail', requireAuth(), async (req: Request, res: Response) => {
+  try {
+    const tutorEmail = req.params.tutorEmail;
+    const user = req.user;
+    
+    if (!user) {
+      return res.status(401).json({ error: 'No autenticat' });
+    }
+
+    // Verificar permisos
+    if (user.role === 'docent' && user.email !== tutorEmail) {
+      return res.status(403).json({ error: 'No tens permisos per veure aquests horaris' });
+    }
+
+    // Crear la tabla si no existe
+    await query(`
+      CREATE TABLE IF NOT EXISTS horarios_tutor (
+        id SERIAL PRIMARY KEY,
+        tutor_email VARCHAR(255) NOT NULL,
+        dia VARCHAR(20) NOT NULL,
+        hora_inicio TIME NOT NULL,
+        hora_fin TIME NOT NULL,
+        activo BOOLEAN DEFAULT true,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    const result = await query(`
+      SELECT dia, hora_inicio, hora_fin, activo
+      FROM horarios_tutor 
+      WHERE tutor_email = $1 
+      ORDER BY dia, hora_inicio
+    `, [tutorEmail]);
+
+    res.json({
+      horarios: result.rows,
+      total: result.rows.length
+    });
+
+  } catch (error: any) {
+    console.error('Error obtenint horarios del tutor:', error);
+    res.status(500).json({ error: 'Error obtenint horarios del tutor' });
+  }
+});
+
+// GET /dades-personals/cites-calendari/:tutorEmail - Obtener citas del calendario
+router.get('/cites-calendari/:tutorEmail', requireAuth(), async (req: Request, res: Response) => {
+  try {
+    const tutorEmail = req.params.tutorEmail;
+    const user = req.user;
+    
+    if (!user) {
+      return res.status(401).json({ error: 'No autenticat' });
+    }
+
+    // Verificar permisos
+    if (user.role === 'docent' && user.email !== tutorEmail) {
+      return res.status(403).json({ error: 'No tens permisos per veure aquestes cites' });
+    }
+
+    // Crear la tabla si no existe
+    await query(`
+      CREATE TABLE IF NOT EXISTS cites_calendari (
+        id VARCHAR(255) PRIMARY KEY,
+        alumne_id VARCHAR(255),
+        tutor_email VARCHAR(255) NOT NULL,
+        any_curs VARCHAR(20) NOT NULL,
+        data_cita TIMESTAMP NOT NULL,
+        durada_minuts INTEGER DEFAULT 30,
+        nom_familia VARCHAR(255) NOT NULL,
+        email_familia VARCHAR(255) NOT NULL,
+        telefon_familia VARCHAR(50),
+        notes TEXT,
+        estat VARCHAR(50) DEFAULT 'pendent',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    const result = await query(`
+      SELECT id, alumne_id, data_cita, durada_minuts, nom_familia, 
+             email_familia, telefon_familia, notes, estat, created_at
+      FROM cites_calendari 
+      WHERE tutor_email = $1 
+      ORDER BY data_cita DESC
+    `, [tutorEmail]);
+
+    res.json({
+      cites: result.rows,
+      total: result.rows.length
+    });
+
+  } catch (error: any) {
+    console.error('Error obtenint cites del calendari:', error);
+    res.status(500).json({ error: 'Error obtenint cites del calendari' });
+  }
+});
+
+// GET /dades-personals/borradores-entrevista/:tutorEmail - Obtener borradores de entrevistas
+router.get('/borradores-entrevista/:tutorEmail', requireAuth(), async (req: Request, res: Response) => {
+  try {
+    const tutorEmail = req.params.tutorEmail;
+    const user = req.user;
+    
+    if (!user) {
+      return res.status(401).json({ error: 'No autenticat' });
+    }
+
+    // Verificar permisos
+    if (user.role === 'docent' && user.email !== tutorEmail) {
+      return res.status(403).json({ error: 'No tens permisos per veure aquests borradors' });
+    }
+
+    // Crear la tabla si no existe
+    await query(`
+      CREATE TABLE IF NOT EXISTS borradores_entrevista (
+        id SERIAL PRIMARY KEY,
+        cita_id VARCHAR(255) NOT NULL,
+        alumne_id VARCHAR(255) NOT NULL,
+        tutor_email VARCHAR(255) NOT NULL,
+        fecha_entrevista TIMESTAMP NOT NULL,
+        observaciones TEXT,
+        puntos_tratados TEXT,
+        acuerdos TEXT,
+        seguimiento TEXT,
+        estado VARCHAR(50) DEFAULT 'borrador',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    const result = await query(`
+      SELECT be.id, be.cita_id, be.alumne_id, be.fecha_entrevista, 
+             be.observaciones, be.puntos_tratados, be.acuerdos, 
+             be.seguimiento, be.estado, be.created_at,
+             cc.nom_familia, cc.email_familia
+      FROM borradores_entrevista be
+      LEFT JOIN cites_calendari cc ON be.cita_id = cc.id
+      WHERE be.tutor_email = $1 
+      ORDER BY be.fecha_entrevista DESC
+    `, [tutorEmail]);
+
+    res.json({
+      borradores: result.rows,
+      total: result.rows.length
+    });
+
+  } catch (error: any) {
+    console.error('Error obtenint borradors d\'entrevista:', error);
+    res.status(500).json({ error: 'Error obtenint borradors d\'entrevista' });
+  }
+});
+
+// POST /dades-personals/borradores-entrevista - Crear borrador de entrevista
+router.post('/borradores-entrevista', requireAuth(), async (req: Request, res: Response) => {
+  try {
+    const user = req.user;
+    
+    if (!user) {
+      return res.status(401).json({ error: 'No autenticat' });
+    }
+
+    const { cita_id, alumne_id, tutor_email, fecha_entrevista, observaciones, puntos_tratados, acuerdos, seguimiento } = req.body;
+
+    // Validar datos requeridos
+    if (!cita_id || !alumne_id || !tutor_email || !fecha_entrevista) {
+      return res.status(400).json({ error: 'Falten dades obligatòries' });
+    }
+
+    // Verificar permisos
+    if (user.role === 'docent' && user.email !== tutor_email) {
+      return res.status(403).json({ error: 'No tens permisos per crear aquest borrador' });
+    }
+
+    const result = await query(`
+      INSERT INTO borradores_entrevista (
+        cita_id, alumne_id, tutor_email, fecha_entrevista, 
+        observaciones, puntos_tratados, acuerdos, seguimiento
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      RETURNING *
+    `, [cita_id, alumne_id, tutor_email, fecha_entrevista, observaciones, puntos_tratados, acuerdos, seguimiento]);
+
+    res.status(201).json({
+      message: 'Borrador creat correctament',
+      borrador: result.rows[0]
+    });
+
+  } catch (error: any) {
+    console.error('Error creant borrador:', error);
+    res.status(500).json({ error: 'Error creant borrador' });
+  }
+});
+
+// PUT /dades-personals/borradores-entrevista/:id - Actualizar borrador de entrevista
+router.put('/borradores-entrevista/:id', requireAuth(), async (req: Request, res: Response) => {
+  try {
+    const borradorId = req.params.id;
+    const user = req.user;
+    
+    if (!user) {
+      return res.status(401).json({ error: 'No autenticat' });
+    }
+
+    const { observaciones, puntos_tratados, acuerdos, seguimiento, estado } = req.body;
+
+    // Verificar que el borrador existe y pertenece al usuario
+    const borradorResult = await query(`
+      SELECT * FROM borradores_entrevista WHERE id = $1
+    `, [borradorId]);
+
+    if (borradorResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Borrador no trobat' });
+    }
+
+    const borrador = borradorResult.rows[0];
+
+    // Verificar permisos
+    if (user.role === 'docent' && user.email !== borrador.tutor_email) {
+      return res.status(403).json({ error: 'No tens permisos per actualitzar aquest borrador' });
+    }
+
+    const result = await query(`
+      UPDATE borradores_entrevista 
+      SET observaciones = $1, puntos_tratados = $2, acuerdos = $3, 
+          seguimiento = $4, estado = $5, updated_at = CURRENT_TIMESTAMP
+      WHERE id = $6
+      RETURNING *
+    `, [observaciones, puntos_tratados, acuerdos, seguimiento, estado || 'borrador', borradorId]);
+
+    res.json({
+      message: 'Borrador actualitzat correctament',
+      borrador: result.rows[0]
+    });
+
+  } catch (error: any) {
+    console.error('Error actualitzant borrador:', error);
+    res.status(500).json({ error: 'Error actualitzant borrador' });
+  }
+});
+
 export default router;
