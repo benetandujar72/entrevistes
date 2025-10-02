@@ -38,7 +38,6 @@ services:
       GOOGLE_PRIVATE_KEY: ${GOOGLE_PRIVATE_KEY:-}
       SHEETS_SPREADSHEET_ID: ${SHEETS_SPREADSHEET_ID:-}
       ANY_ACTUAL: ${ANY_ACTUAL:-2025-2026}
-      DISABLE_AUTH: 1
       # Logging para desarrollo
       LOG_LEVEL: debug
     depends_on:
@@ -61,11 +60,13 @@ services:
     restart: unless-stopped
 
   client:
-    build: 
+    build:
       context: ./client
       dockerfile: Dockerfile
+      target: prod
     container_name: entrevistes-client
     environment:
+      # Usar localhost para que el navegador acceda al backend
       VITE_BACKEND_BASE: http://localhost:8081
       VITE_APP_NAME: Entrevistes App (Dev)
       VITE_APP_VERSION: 1.0.0-dev
@@ -74,13 +75,17 @@ services:
         condition: service_healthy
     ports:
       - "127.0.0.1:5174:5173"
-    volumes:
-      - ./client/src:/app/src:ro
-      - ./client/static:/app/static:ro
-      - ./client/package.json:/app/package.json:ro
+    # Desactivar volúmenes para evitar reinicio infinito en desarrollo con Docker
+    # Para desarrollo local, ejecutar el cliente fuera de Docker
     networks:
       - entrevistes-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:5173 || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
 
 volumes:
   db_data:

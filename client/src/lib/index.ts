@@ -28,11 +28,11 @@ export async function getMe(): Promise<Me | null> {
   try {
     const token = localStorage.getItem('entrevistes.token');
     if (!token) return null;
-    
+
     const response = await fetch(`${BASE}/usuaris/me`, {
       headers: { Authorization: `Bearer ${token}` }
     });
-    
+
     if (response.ok) {
       return await response.json();
     }
@@ -157,6 +157,7 @@ export type EntrevistaAdmin = {
   id: string;
   alumneId: string;
   alumneNom: string;
+  alumneGrup: string | null;
   anyCurs: string;
   data: string;
   acords: string;
@@ -490,12 +491,12 @@ export async function consolidarCurs(curs: string): Promise<ConsolidacionResult>
     headers: { ...authHeaders(), 'Content-Type': 'application/json' },
     body: JSON.stringify({ curs })
   });
-  
+
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({ error: 'Error desconocido' }));
     throw new Error(`Error consolidant curs: ${errorData.error || res.statusText}`);
   }
-  
+
   return res.json();
 }
 
@@ -504,12 +505,12 @@ export async function initConsolidacionConfig(): Promise<{ message: string; stat
     method: 'POST',
     headers: { ...authHeaders(), 'Content-Type': 'application/json' }
   });
-  
+
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({ error: 'Error desconocido' }));
     throw new Error(`Error inicializando configuración: ${errorData.error || res.statusText}`);
   }
-  
+
   return res.json();
 }
 
@@ -529,7 +530,7 @@ export async function fetchConsolidacionLogs(curs?: string): Promise<Consolidaci
 
 export async function fetchHistorialEntrevistas(alumneId: string, anyCurs?: string): Promise<EntrevistaHistorial[]> {
   // Usar endpoint de desarrollo temporalmente (sin autenticación)
-  const url = anyCurs 
+  const url = anyCurs
     ? `${BASE}/entrevistes/dev/historial/${alumneId}?anyCurs=${encodeURIComponent(anyCurs)}`
     : `${BASE}/entrevistes/dev/historial/${alumneId}`;
   const res = await fetch(url);
@@ -542,7 +543,7 @@ export async function fetchTodasLasEntrevistasAdmin(anyCurs?: string, limit?: nu
   if (anyCurs) params.append('anyCurs', anyCurs);
   if (limit) params.append('limit', limit.toString());
   if (offset) params.append('offset', offset.toString());
-  
+
   const url = `${BASE}/entrevistes/admin/todas${params.toString() ? '?' + params.toString() : ''}`;
   const res = await fetch(url, { headers: authHeaders() });
   if (!res.ok) throw new Error('Error obtenint totes les entrevistes');
@@ -594,10 +595,10 @@ export async function limpiarConsolidacion(curso: string, anyCurs: string): Prom
 // Funciones utilitarias para formateo de fechas
 export function formatearFechaMadrid(fechaISO: string): string {
   if (!fechaISO) return '—';
-  
+
   try {
     const fecha = new Date(fechaISO);
-    
+
     // Formatear en zona horaria de Madrid (Europe/Madrid)
     const opciones: Intl.DateTimeFormatOptions = {
       timeZone: 'Europe/Madrid',
@@ -608,7 +609,7 @@ export function formatearFechaMadrid(fechaISO: string): string {
       minute: '2-digit',
       hour12: false
     };
-    
+
     return fecha.toLocaleString('es-ES', opciones);
   } catch (error) {
     console.error('Error formateando fecha:', error);
@@ -618,10 +619,10 @@ export function formatearFechaMadrid(fechaISO: string): string {
 
 export function formatearFechaMadridSoloFecha(fechaISO: string): string {
   if (!fechaISO) return '—';
-  
+
   try {
     const fecha = new Date(fechaISO);
-    
+
     // Formatear solo la fecha en zona horaria de Madrid
     const opciones: Intl.DateTimeFormatOptions = {
       timeZone: 'Europe/Madrid',
@@ -629,7 +630,7 @@ export function formatearFechaMadridSoloFecha(fechaISO: string): string {
       month: '2-digit',
       day: '2-digit'
     };
-    
+
     return fecha.toLocaleDateString('es-ES', opciones);
   } catch (error) {
     console.error('Error formateando fecha:', error);
@@ -639,10 +640,10 @@ export function formatearFechaMadridSoloFecha(fechaISO: string): string {
 
 export function formatearFechaMadridSoloHora(fechaISO: string): string {
   if (!fechaISO) return '—';
-  
+
   try {
     const fecha = new Date(fechaISO);
-    
+
     // Formatear solo la hora en zona horaria de Madrid
     const opciones: Intl.DateTimeFormatOptions = {
       timeZone: 'Europe/Madrid',
@@ -650,7 +651,7 @@ export function formatearFechaMadridSoloHora(fechaISO: string): string {
       minute: '2-digit',
       hour12: false
     };
-    
+
     return fecha.toLocaleTimeString('es-ES', opciones);
   } catch (error) {
     console.error('Error formateando fecha:', error);
@@ -917,7 +918,7 @@ export async function obtenirEventosCalendario(tutorEmail: string, fechaInicio?:
   if (fechaInicio) params.append('fecha_inicio', fechaInicio);
   if (fechaFin) params.append('fecha_fin', fechaFin);
   if (params.toString()) url += `?${params.toString()}`;
-  
+
   const res = await fetch(url, {
     headers: { ...authHeaders() }
   });

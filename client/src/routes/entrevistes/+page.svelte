@@ -4,18 +4,37 @@
   import { getToken } from '$lib/auth';
   import Icon from '$lib/components/SimpleIcon.svelte';
   import FilterBar from '$lib/components/FilterBar.svelte';
-  
+
   let entrevistes: (Entrevista | EntrevistaAdmin)[] = [];
   let q = '';
   let loading = true;
   let error: string | null = null;
   let selected: string | undefined = undefined;
+  let selectedGrup: string = '';
   let cfg = loadConfigSpreadsheets();
   let isAdmin = false;
   let totalEntrevistas = 0;
   let currentPage = 0;
   let hasMore = false;
   const pageSize = 50;
+
+  // Estado para controlar qué entradas de entrevistas consolidadas están expandidas
+  // Key format: `${entrevistaId}-${index}`
+  let expandedEntries: Set<string> = new Set();
+
+  function toggleEntry(entrevistaId: string, index: number) {
+    const key = `${entrevistaId}-${index}`;
+    if (expandedEntries.has(key)) {
+      expandedEntries.delete(key);
+    } else {
+      expandedEntries.add(key);
+    }
+    expandedEntries = expandedEntries; // Trigger reactivity
+  }
+
+  function isEntryExpanded(entrevistaId: string, index: number): boolean {
+    return expandedEntries.has(`${entrevistaId}-${index}`);
+  }
 
   onMount(async () => {
     const savedCourse = getSelectedCourse();
@@ -31,10 +50,10 @@
   });
 
   async function loadEntrevistas() {
-    loading = true; 
+    loading = true;
     error = null;
     console.log('🔄 Cargando entrevistas para curso:', selected);
-    try { 
+    try {
       if (isAdmin) {
         // Para administradores: cargar todas las entrevistas (normales + consolidadas)
         // Asegurar que siempre se pasa un curso (usar '1r' por defecto si no hay selected)
@@ -51,16 +70,17 @@
         totalEntrevistas = entrevistes.length;
         hasMore = false;
       }
-    } catch (e: any) { 
+    } catch (e: any) {
       console.error('❌ Error cargando entrevistas:', e);
-      error = e?.message ?? 'Error'; 
-    } finally { 
-      loading = false; 
+      error = e?.message ?? 'Error';
+    } finally {
+      loading = false;
     }
   }
 
   async function reload() {
     currentPage = 0;
+    expandedEntries.clear(); // Reset expanded state on reload
     await loadEntrevistas();
   }
 
@@ -99,31 +119,59 @@
     const acords = (e.acords ?? '').toLowerCase();
     const alumneNom = ('alumneNom' in e ? e.alumneNom : '')?.toLowerCase() || '';
     const alumneId = (e.alumneId ?? '').toLowerCase();
-    return acords.includes(searchText) || alumneNom.includes(searchText) || alumneId.includes(searchText);
+
+    // Filtrar por búsqueda de texto
+    const matchesSearch = acords.includes(searchText) || alumneNom.includes(searchText) || alumneId.includes(searchText);
+
+    // Filtrar por grupo si está seleccionado
+    const matchesGrup = !selectedGrup || ('alumneGrup' in e && e.alumneGrup === selectedGrup);
+
+    return matchesSearch && matchesGrup;
   });
+
+  // Obtener grupos únicos de las entrevistas cargadas
+  $: grupsDisponibles = Array.from(
+    new Set(
+      entrevistes
+        .filter(e => 'alumneGrup' in e && e.alumneGrup)
+        .map(e => 'alumneGrup' in e ? e.alumneGrup : null)
+        .filter(Boolean)
+    )
+  ).sort() as string[];
 </script>
 
-<FilterBar 
+<FilterBar
   title="Entrevistes"
   count={totalEntrevistas}
   {loading}
   filters={{
-    curs: { 
-      value: selected, 
+    curs: {
+      value: selected,
       options: [
         { value: "1r", label: "1r ESO" },
         { value: "2n", label: "2n ESO" },
         { value: "3r", label: "3r ESO" },
         { value: "4t", label: "4t ESO" }
       ],
-      onChange: (value) => { 
+      onChange: (value) => {
         selected = value as any;
-        setSelectedCourse(value as any); 
-        reload(); 
+        selectedGrup = ''; // Resetear grupo al cambiar curso
+        setSelectedCourse(value as any);
+        reload();
       }
     },
-    search: { 
-      value: q, 
+    grup: {
+      value: selectedGrup,
+      options: [
+        { value: "", label: "Tots els grups" },
+        ...grupsDisponibles.map(g => ({ value: g, label: g }))
+      ],
+      onChange: (value) => {
+        selectedGrup = value;
+      }
+    },
+    search: {
+      value: q,
       placeholder: "Cercar per acords, alumne...",
       onChange: (value) => { q = value; }
     }
@@ -171,6 +219,9 @@
             </div>
             <div class="card-badges">
               <span class="badge badge-primary">{e.anyCurs || selected || '—'}</span>
+              {#if 'alumneGrup' in e && e.alumneGrup}
+                <span class="badge badge-info">{e.alumneGrup}</span>
+              {/if}
               {#if 'tipo' in e}
                 <span class="badge {e.tipo === 'normal' ? 'badge-success' : 'badge-purple'}">
                   {e.tipo === 'normal' ? 'Actual' : 'Històric'}
@@ -178,47 +229,63 @@
               {/if}
             </div>
           </div>
-          
+
           <div class="entrevista-student">
             <Icon name="user" size={14} />
             <span>Alumne: {('alumneNom' in e ? e.alumneNom : '') || e.alumneId || '—'}</span>
           </div>
-          
+
           {#if 'origen' in e && e.origen !== 'Sistema actual'}
             <div class="entrevista-origin">
               <Icon name="tag" size={12} />
               <span>Origen: {e.origen}</span>
             </div>
           {/if}
-          
+
           {#if 'tipo' in e && e.tipo === 'consolidada' && e.acords}
-            <!-- Para entrevistas consolidadas, parsear múltiples entradas -->
-            {#each e.acords.split('---').map(entry => entry.trim()).filter(entry => entry) as entry, index}
-              {@const parts = entry.split('\n').filter(part => part.trim())}
-              {@const dataLine = parts.find(part => part.startsWith('Data:'))}
-              {@const acordsLine = parts.find(part => part.startsWith('Acords:'))}
-              
-              <div class="consolidada-entry">
-                {#if dataLine}
-                  <div class="consolidada-date">
-                    <Icon name="calendar" size={12} />
-                    <span>{dataLine}</span>
-                  </div>
-                {/if}
-                {#if acordsLine}
-                  <div class="consolidada-content">
-                    <span>{acordsLine}</span>
-                  </div>
-                {/if}
-              </div>
-            {/each}
+            <!-- Para entrevistas consolidadas, usar acordeón -->
+            <div class="accordion-container">
+              {#each e.acords.split('---').map(entry => entry.trim()).filter(entry => entry) as entry, index}
+                {@const parts = entry.split('\n').filter(part => part.trim())}
+                {@const dataLine = parts.find(part => part.startsWith('Data:'))}
+                {@const acordsLine = parts.find(part => part.startsWith('Acords:'))}
+                {@const isExpanded = isEntryExpanded(e.id, index)}
+
+                <div class="accordion-item">
+                  <button
+                    class="accordion-header"
+                    class:expanded={isExpanded}
+                    onclick={() => toggleEntry(e.id, index)}
+                    title="Clica per veure els acords"
+                  >
+                    <div class="accordion-title">
+                      <Icon name="calendar" size={12} />
+                      <span>{dataLine || `Entrevista ${index + 1}`}</span>
+                    </div>
+                    <div class="accordion-icon">
+                      <Icon name={isExpanded ? 'chevron-up' : 'chevron-down'} size={14} />
+                    </div>
+                  </button>
+
+                  {#if isExpanded}
+                    <div class="accordion-content">
+                      {#if acordsLine}
+                        <span>{acordsLine}</span>
+                      {:else}
+                        <span class="no-content">Sense acords registrats</span>
+                      {/if}
+                    </div>
+                  {/if}
+                </div>
+              {/each}
+            </div>
           {:else}
             <!-- Para entrevistas normales, mostrar acords directamente -->
             <div class="entrevista-content">
               <span>{e.acords || 'Sense acords'}</span>
             </div>
           {/if}
-          
+
           <div class="card-actions">
             <a href="/alumnes/{e.alumneId}" class="btn btn-text-primary btn-sm">
               <Icon name="user" size={14} />
@@ -229,7 +296,7 @@
                 <Icon name="edit" size={14} />
                 Editar
               </a>
-              <button 
+              <button
                 onclick={() => borrarEntrevista(e.id, e.data)}
                 class="btn btn-danger btn-sm"
               >
@@ -241,11 +308,11 @@
         </article>
       {/each}
     </div>
-    
+
     {#if isAdmin && hasMore}
       <div class="load-more">
-        <button 
-          onclick={loadMore} 
+        <button
+          onclick={loadMore}
           disabled={loading}
           class="btn btn-filled-primary"
         >
@@ -515,6 +582,12 @@
     border-color: #e9d5ff;
   }
 
+  .badge-info {
+    color: #0284c7;
+    background: #e0f2fe;
+    border-color: #bae6fd;
+  }
+
   .entrevista-student {
     display: flex;
     align-items: center;
@@ -537,32 +610,91 @@
     line-height: 1.5;
   }
 
-  .consolidada-entry {
-    margin-bottom: 1rem;
+  /* === ACCORDION STYLES === */
+  .accordion-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
   }
 
-  .consolidada-date {
+  .accordion-item {
+    border: 1px solid var(--google-grey-300);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    transition: all 0.2s ease;
+  }
+
+  .accordion-item:hover {
+    border-color: var(--primary-300);
+  }
+
+  .accordion-header {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem;
+    background: linear-gradient(135deg, #f3e8ff 0%, #faf5ff 100%);
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: var(--text-sm);
+  }
+
+  .accordion-header:hover {
+    background: linear-gradient(135deg, #e9d5ff 0%, #f3e8ff 100%);
+  }
+
+  .accordion-header.expanded {
+    background: linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%);
+    color: white;
+  }
+
+  .accordion-title {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    background: var(--warning-50);
-    border: 1px solid var(--warning-500);
-    border-radius: var(--radius-md);
-    padding: 0.5rem;
-    margin-bottom: 0.5rem;
-    font-size: var(--text-xs);
     font-weight: 600;
-    color: var(--warning-600);
   }
 
-  .consolidada-content {
-    background: var(--google-grey-100);
-    border: 1px solid var(--google-grey-300);
-    border-radius: var(--radius-md);
-    padding: 0.75rem;
+  .accordion-icon {
+    transition: transform 0.3s ease;
+    display: flex;
+    align-items: center;
+  }
+
+  .accordion-header.expanded .accordion-icon {
+    transform: rotate(180deg);
+  }
+
+  .accordion-content {
+    padding: 1rem;
+    background: var(--google-grey-50);
+    border-top: 1px solid var(--google-grey-300);
     font-size: var(--text-sm);
     color: var(--fg-secondary);
-    line-height: 1.4;
+    line-height: 1.5;
+    animation: slideDown 0.3s ease;
+  }
+
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      max-height: 0;
+      padding-top: 0;
+      padding-bottom: 0;
+    }
+    to {
+      opacity: 1;
+      max-height: 500px;
+      padding-top: 1rem;
+      padding-bottom: 1rem;
+    }
+  }
+
+  .no-content {
+    font-style: italic;
+    color: var(--google-grey-500);
   }
 
   /* === CARD ACTIONS === */

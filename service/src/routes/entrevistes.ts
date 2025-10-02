@@ -238,11 +238,16 @@ router.get('/', async (req: Request, res: Response) => {
 // GET /entrevistes/admin/todas - Obtener todas las entrevistas de todos los alumnos (solo admin)
 router.get('/admin/todas', requireRole(['admin']), async (req: Request, res: Response) => {
   try {
-    const anyCurs = req.query.anyCurs as string;
+    // Si se proporciona un curso (1r, 2n, 3r, 4t), convertir al año académico actual
+    let anyCurs = req.query.anyCurs as string;
+    if (anyCurs && ['1r', '2n', '3r', '4t'].includes(anyCurs)) {
+      anyCurs = '2025-2026'; // Convertir curso a año académico actual
+    }
     const limit = parseInt(req.query.limit as string) || 100;
     const offset = parseInt(req.query.offset as string) || 0;
     
-    // 1. Obtener entrevistas normales de la BD
+    
+    // 1. Obtener entrevistas normales de la BD con grupo del alumno
     const entrevistesNormales = await query<{
       id: string;
       alumne_id: string;
@@ -252,16 +257,20 @@ router.get('/admin/todas', requireRole(['admin']), async (req: Request, res: Res
       acords: string;
       usuari_creador_id: string;
       created_at: string;
+      alumne_grup: string | null;
     }>(`
-      SELECT e.id, e.alumne_id, a.nom as alumne_nom, e.any_curs, e.data, e.acords, e.usuari_creador_id, e.created_at
+      SELECT e.id, e.alumne_id, a.nom as alumne_nom, e.any_curs, e.data, e.acords, e.usuari_creador_id, e.created_at,
+             g.nom as alumne_grup
       FROM entrevistes e
       LEFT JOIN alumnes a ON a.alumne_id = e.alumne_id
+      LEFT JOIN alumnes_curs ac ON ac.alumne_id = e.alumne_id AND ac.any_curs = e.any_curs
+      LEFT JOIN grups g ON g.grup_id = ac.grup_id
       ${anyCurs ? 'WHERE e.any_curs = $1' : ''}
       ORDER BY e.data DESC
       LIMIT $${anyCurs ? '2' : '1'} OFFSET $${anyCurs ? '3' : '2'}
     `, anyCurs ? [anyCurs, limit, offset] : [limit, offset]);
     
-    // 2. Obtener entrevistas consolidadas
+    // 2. Obtener entrevistas consolidadas con grupo del alumno
     const entrevistesConsolidadas = await query<{
       id: string;
       alumne_id: string;
@@ -272,11 +281,15 @@ router.get('/admin/todas', requireRole(['admin']), async (req: Request, res: Res
       acords: string;
       any_curs: string;
       created_at: string;
+      alumne_grup: string | null;
     }>(`
       SELECT ec.id, ec.alumne_id, a.nom as alumne_nom, ec.curso_origen, ec.pestana_origen, 
-             ec.data_entrevista, ec.acords, ec.any_curs, ec.created_at
+             ec.data_entrevista, ec.acords, ec.any_curs, ec.created_at,
+             g.nom as alumne_grup
       FROM entrevistes_consolidadas ec
       LEFT JOIN alumnes a ON a.alumne_id = ec.alumne_id
+      LEFT JOIN alumnes_curs ac ON ac.alumne_id = ec.alumne_id AND ac.any_curs = ec.any_curs
+      LEFT JOIN grups g ON g.grup_id = ac.grup_id
       ${anyCurs ? 'WHERE ec.any_curs = $1' : ''}
       ORDER BY ec.data_entrevista DESC
       LIMIT $${anyCurs ? '2' : '1'} OFFSET $${anyCurs ? '3' : '2'}
@@ -289,6 +302,7 @@ router.get('/admin/todas', requireRole(['admin']), async (req: Request, res: Res
         id: row.id,
         alumneId: row.alumne_id,
         alumneNom: row.alumne_nom,
+        alumneGrup: row.alumne_grup,
         anyCurs: row.any_curs,
         data: row.data,
         acords: row.acords,
@@ -302,6 +316,7 @@ router.get('/admin/todas', requireRole(['admin']), async (req: Request, res: Res
         id: row.id,
         alumneId: row.alumne_id,
         alumneNom: row.alumne_nom,
+        alumneGrup: row.alumne_grup,
         anyCurs: row.any_curs,
         data: row.data_entrevista,
         acords: row.acords,
