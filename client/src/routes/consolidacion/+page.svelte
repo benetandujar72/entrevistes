@@ -83,7 +83,8 @@
 
   async function testSpreadsheets() {
     try {
-      const response = await fetch('/consolidacion/test-spreadsheets', {
+      const backendUrl = import.meta.env.VITE_BACKEND_BASE || 'http://localhost:8081';
+      const response = await fetch(`${backendUrl}/consolidacion/test-spreadsheets`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,

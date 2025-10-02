@@ -18,7 +18,13 @@
   const pageSize = 50;
 
   onMount(async () => {
-    selected = getSelectedCourse();
+    const savedCourse = getSelectedCourse();
+    // Si hay un curso guardado, usarlo; si no, usar el primer curso por defecto
+    selected = savedCourse || '1r';
+    // Si no había curso guardado, guardarlo ahora
+    if (!savedCourse) {
+      setSelectedCourse('1r' as any);
+    }
     // Detectar si es administrador (simplificado: si tiene token, asumimos que puede ser admin)
     isAdmin = !!getToken();
     await loadEntrevistas();
@@ -27,13 +33,18 @@
   async function loadEntrevistas() {
     loading = true; 
     error = null;
+    console.log('🔄 Cargando entrevistas para curso:', selected);
     try { 
       if (isAdmin) {
         // Para administradores: cargar todas las entrevistas (normales + consolidadas)
-        const response = await fetchTodasLasEntrevistasAdmin(selected, pageSize, currentPage * pageSize);
+        // Asegurar que siempre se pasa un curso (usar '1r' por defecto si no hay selected)
+        const cursoActual = selected || '1r';
+        console.log('📚 Llamando fetchTodasLasEntrevistasAdmin con curso:', cursoActual);
+        const response = await fetchTodasLasEntrevistasAdmin(cursoActual, pageSize, currentPage * pageSize);
         entrevistes = response.entrevistas;
         totalEntrevistas = response.paginacion.total;
         hasMore = response.paginacion.hasMore;
+        console.log('✅ Entrevistas cargadas:', entrevistes.length);
       } else {
         // Para usuarios normales: usar el endpoint tradicional
         entrevistes = await fetchEntrevistes();
@@ -41,6 +52,7 @@
         hasMore = false;
       }
     } catch (e: any) { 
+      console.error('❌ Error cargando entrevistas:', e);
       error = e?.message ?? 'Error'; 
     } finally { 
       loading = false; 
@@ -57,7 +69,8 @@
     currentPage++;
     loading = true;
     try {
-      const response = await fetchTodasLasEntrevistasAdmin(selected, pageSize, currentPage * pageSize);
+      const cursoActual = selected || '1r';
+      const response = await fetchTodasLasEntrevistasAdmin(cursoActual, pageSize, currentPage * pageSize);
       entrevistes = [...entrevistes, ...response.entrevistas];
       hasMore = response.paginacion.hasMore;
     } catch (e: any) {
@@ -104,11 +117,16 @@
         { value: "4t", label: "4t ESO" }
       ],
       onChange: (value) => { 
+        selected = value as any;
         setSelectedCourse(value as any); 
         reload(); 
       }
     },
-    search: { value: q, placeholder: "Cercar per acords, alumne..." }
+    search: { 
+      value: q, 
+      placeholder: "Cercar per acords, alumne...",
+      onChange: (value) => { q = value; }
+    }
   }}
 />
 

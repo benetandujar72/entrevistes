@@ -11,6 +11,10 @@ yarn-error.log*
 .env.test.local
 .env.production.local
 
+# Build outputs
+build/
+dist/
+
 # Logs
 logs
 *.log
@@ -61,20 +65,8 @@ jspm_packages/
 .cache
 .parcel-cache
 
-# Next.js build output
-.next
-
-# Nuxt.js build / generate output
-.nuxt
-dist
-
-# Gatsby files
-.cache/
-public
-
-# Storybook build outputs
-.out
-.storybook-out
+# SvelteKit build output
+.svelte-kit
 
 # Temporary folders
 tmp/

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test de Autenticación</title>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+    <h1>Test de Autenticación Google</h1>
+    
+    <div id="gsi-btn"></div>
+    
+    <div id="result"></div>
+    
+    <script>
+        const CLIENT_ID = '582773400896-0io28jocfebl0aec7u5bnr6up367chs6.apps.googleusercontent.com';
+        
+        function handleCredentialResponse(response) {
+            console.log('Token recibido:', response.credential);
+            
+            // Probar con el endpoint de test
+            fetch('http://localhost:8081/auth-test/test', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    token: response.credential
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                console.log('Respuesta del servidor:', data);
+                document.getElementById('result').innerHTML = 
+                    '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('result').innerHTML = 
+                    '<p style="color: red;">Error: ' + error.message + '</p>';
+            });
+        }
+        
+        window.onload = function() {
+            google.accounts.id.initialize({
+                client_id: CLIENT_ID,
+                callback: handleCredentialResponse
+            });
+            
+            google.accounts.id.renderButton(
+                document.getElementById('gsi-btn'),
+                { theme: 'outline', size: 'large' }
+            );
+        };
+    </script>
+</body>
+</html>

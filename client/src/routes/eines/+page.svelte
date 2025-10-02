@@ -73,7 +73,7 @@
                     </div>
 					<h2 style="margin: 0 0 8px; font-size: 24px; color: #111827;">Programador de Cites</h2>
 					<p style="margin: 0 0 24px; color: #6b7280;">Programa i gestiona les cites del sistema</p>
-                    <Button variant="filled" size="md" leadingIcon="calendar" href="/programador-citas">
+                    <Button variant="filled" size="md" leadingIcon="calendar" href="/configuracion-horarios">
                         Obrir Programador de Cites
                     </Button>
 				</div>

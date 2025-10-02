@@ -1,25 +1,79 @@
 # syntax=docker/dockerfile:1
 
+# Etapa 1: Dependencias de producción
 FROM node:20-alpine AS deps
 WORKDIR /app
-COPY package.json package-lock.json ./
-RUN npm ci --omit=dev
 
+# Instalar dependencias del sistema necesarias
+RUN apk add --no-cache \
+    python3 \
+    make \
+    g++ \
+    && rm -rf /var/cache/apk/*
+
+# Copiar archivos de dependencias
+COPY package.json package-lock.json ./
+
+# Instalar solo dependencias de producción
+RUN npm install --omit=dev && \
+    npm cache clean --force
+
+# Etapa 2: Construcción
 FROM node:20-alpine AS builder
 WORKDIR /app
+
+# Instalar dependencias de desarrollo
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm install
+
+# Copiar código fuente
 COPY tsconfig.json ./
 COPY src ./src
+
+# Construir la aplicación
 RUN npm run build
 
+# Etapa 3: Runtime optimizado
 FROM node:20-alpine AS runner
-ENV NODE_ENV=production
 WORKDIR /app
+
+# Crear usuario no-root para seguridad
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nodejs
+
+# Instalar dependencias del sistema para producción
+RUN apk add --no-cache \
+    dumb-init \
+    curl \
+    && rm -rf /var/cache/apk/*
+
+# Configurar variables de entorno
+ENV NODE_ENV=production
+ENV PORT=8081
+
+# Copiar dependencias de producción
 COPY --from=deps /app/node_modules ./node_modules
+
+# Copiar aplicación construida
 COPY --from=builder /app/dist ./dist
-COPY package.json ./
-EXPOSE 8080
-HEALTHCHECK --interval=10s --timeout=3s --retries=5 --start-period=5s \
-  CMD node -e "fetch('http://localhost:8080/health').then(r=>{if(r.ok)process.exit(0);process.exit(1)}).catch(()=>process.exit(1))"
-CMD ["node","dist/index.js"]
+COPY --from=builder /app/package.json ./package.json
+
+# Crear directorio para logs
+RUN mkdir -p /app/logs && \
+    chown -R nodejs:nodejs /app
+
+# Cambiar a usuario no-root
+USER nodejs
+
+# Exponer puerto correcto
+EXPOSE 8081
+
+# Healthcheck optimizado
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 --start-period=30s \
+    CMD curl -f http://localhost:8081/health || exit 1
+
+# Usar dumb-init para manejo correcto de señales
+ENTRYPOINT ["dumb-init", "--"]
+
+# Comando de inicio
+CMD ["node", "dist/index.js"]

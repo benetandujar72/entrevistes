@@ -271,7 +271,7 @@
 					<Icon name="notes" size={18} />
 					{#if !sidebarCollapsed}<span>Entrevistes</span>{/if}
 				</a>
-        <a href="/gestio-cites-unificada" class="nav-link" class:active={$page.url.pathname.startsWith('/gestio-cites-unificada')}>
+        <a href="/gestio-cites" class="nav-link" class:active={$page.url.pathname.startsWith('/gestio-cites')}>
           <Icon name="calendar" size={18} />
           {#if !sidebarCollapsed}<span>Gestió de Cites</span>{/if}
         </a>

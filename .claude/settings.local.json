@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(DATABASE_URL=\"postgresql://entrevistes:entrevistes@localhost:5433/entrevistes\" npm run migrate:up)",
+      "Bash(DATABASE_URL=\"postgresql://entrevistas:entrevistas@localhost:5433/entrevistas\" npx node-pg-migrate down)",
+      "Bash(DATABASE_URL=\"postgresql://entrevistes:entrevistes@localhost:5433/entrevistes\" npx node-pg-migrate down)",
+      "Bash(docker logs:*)",
+      "Bash(node -e \"import(''./dist/config/swagger.js'').then(m => console.log(''Swagger OK:'', !!m.swaggerSpec)).catch(e => console.error(''Error:'', e.message))\")",
+      "Bash(docker exec:*)",
+      "Bash(python:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

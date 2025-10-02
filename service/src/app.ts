@@ -1,5 +1,7 @@
 import express from 'express';
 import cors from 'cors';
+import swaggerUi from 'swagger-ui-express';
+import { swaggerSpec } from './config/swagger.js';
 import alumnes from './routes/alumnes.js';
 import entrevistes from './routes/entrevistes.js';
 import cursos from './routes/cursos.js';
@@ -14,6 +16,10 @@ import dadesPersonals from './routes/dades-personals.js';
 import emails from './routes/emails.js';
 import importComplet from './routes/import-complet.js';
 import calendarioPublico from './routes/calendario-publico.js';
+import authTest from './routes/auth-test.js';
+import tutoresAlumnos from './routes/tutores-alumnos.js';
+import citas from './routes/citas.js';
+import googleCalendarWebhook from './routes/google-calendar-webhook.js';
 
 export function createApp() {
   const app = express();
@@ -49,6 +55,21 @@ export function createApp() {
   app.use('/dades-personals', dadesPersonals);
   app.use('/emails', emails);
   app.use('/calendario-publico', calendarioPublico);
+  app.use('/auth-test', authTest);
+  app.use('/tutores-alumnos', tutoresAlumnos);
+  app.use('/citas', citas);
+  app.use('/google-calendar-webhook', googleCalendarWebhook);
+
+  // Swagger API Documentation
+  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+    customCss: '.swagger-ui .topbar { display: none }',
+    customSiteTitle: 'Entrevistes App API Documentation'
+  }));
+  app.get('/api-docs.json', (_req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.send(swaggerSpec);
+  });
+
   app.get('/health', (_req, res) => res.json({ status: 'ok' }));
   
   // Endpoint para verificar estado de autenticación

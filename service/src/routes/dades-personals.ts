@@ -760,13 +760,23 @@ router.get('/tutor/:tutorEmail/alumnes', requireAuth(), async (req: Request, res
 
     // Obtener alumnos del tutor con datos de contacto
     const result = await query(`
-      SELECT DISTINCT a.alumne_id, a.nom, a.cognoms, a.grup, a.curs,
-             a.tutor1_nom, a.tutor1_email, a.tutor1_tel,
-             a.tutor2_nom, a.tutor2_email, a.tutor2_tel
+      SELECT DISTINCT 
+        a.alumne_id, 
+        a.nom, 
+        pf.cognoms, 
+        ac.grup_id as grup,
+        pf.tutor1_nom, 
+        pf.tutor1_email, 
+        pf.tutor1_tel,
+        pf.tutor2_nom, 
+        pf.tutor2_email, 
+        pf.tutor2_tel
       FROM alumnes a
       JOIN tutories_alumne ta ON a.alumne_id = ta.alumne_id
+      LEFT JOIN pf ON a.personal_id = pf.personal_id
+      LEFT JOIN alumnes_curs ac ON a.alumne_id = ac.alumne_id AND ac.any_curs = ta.any_curs
       WHERE ta.tutor_email = $1 AND ta.any_curs = '2025-2026'
-      ORDER BY a.nom, a.cognoms
+      ORDER BY a.nom, pf.cognoms
     `, [tutorEmail]);
 
     res.json({
@@ -975,6 +985,27 @@ router.get('/export/csv', requireRole(['admin']), async (req: Request, res: Resp
   }
 });
 
+// ========= FUNCIONES AUXILIARES =========
+
+// Función para generar slots de tiempo
+function generarSlotsTiempo(horaInicio: string, horaFin: string, duracionMinutos: number): string[] {
+  const slots: string[] = [];
+  const [horaIni, minIni] = horaInicio.split(':').map(Number);
+  const [horaFinNum, minFin] = horaFin.split(':').map(Number);
+  
+  const inicioMinutos = horaIni * 60 + minIni;
+  const finMinutos = horaFinNum * 60 + minFin;
+  
+  for (let minutos = inicioMinutos; minutos < finMinutos; minutos += duracionMinutos) {
+    const hora = Math.floor(minutos / 60);
+    const minuto = minutos % 60;
+    const slot = `${hora.toString().padStart(2, '0')}:${minuto.toString().padStart(2, '0')}`;
+    slots.push(slot);
+  }
+  
+  return slots;
+}
+
 // ========= NUEVOS ENDPOINTS PARA CONFIGURACIÓN DINÁMICA =========
 
 // POST /dades-personals/configuracion-horarios - Crear nueva configuración de horarios
@@ -996,6 +1027,24 @@ router.post('/configuracion-horarios', requireAuth(), async (req: Request, res: 
     if (!tutor_email || !nombre || !fecha_inicio || !fecha_fin || !dias_semana) {
       return res.status(400).json({ error: 'Dades de configuració incompletes' });
     }
+
+    // Normalizar fechas (convertir de ISO a yyyy-MM-dd)
+    const normalizarFecha = (fecha: string): string => {
+      if (!fecha) return fecha;
+      // Si ya está en formato yyyy-MM-dd, devolverlo tal como está
+      if (/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
+        return fecha;
+      }
+      // Si es formato ISO, extraer solo la parte de la fecha
+      const fechaObj = new Date(fecha);
+      if (isNaN(fechaObj.getTime())) {
+        throw new Error('Formato de fecha inválido');
+      }
+      return fechaObj.toISOString().split('T')[0];
+    };
+
+    const fechaInicioNormalizada = normalizarFecha(fecha_inicio);
+    const fechaFinNormalizada = normalizarFecha(fecha_fin);
 
     // Crear la tabla si no existe
     await query(`
@@ -1020,7 +1069,7 @@ router.post('/configuracion-horarios', requireAuth(), async (req: Request, res: 
         duracion_cita, dias_semana
       ) VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING id
-    `, [tutor_email, nombre, fecha_inicio, fecha_fin, duracion_cita, JSON.stringify(dias_semana)]);
+    `, [tutor_email, nombre, fechaInicioNormalizada, fechaFinNormalizada, duracion_cita, JSON.stringify(dias_semana)]);
 
     res.json({
       message: 'Configuració creada correctament',
@@ -1279,24 +1328,6 @@ router.post('/replicar-configuracion', requireAuth(), async (req: Request, res: 
   }
 });
 
-// Función auxiliar para generar slots de tiempo
-function generarSlotsTiempo(horaInicio: string, horaFin: string, duracionMinutos: number): string[] {
-  const slots: string[] = [];
-  const [horaIni, minIni] = horaInicio.split(':').map(Number);
-  const [horaFinNum, minFin] = horaFin.split(':').map(Number);
-  
-  const inicioMinutos = horaIni * 60 + minIni;
-  const finMinutos = horaFinNum * 60 + minFin;
-  
-  for (let minutos = inicioMinutos; minutos < finMinutos; minutos += duracionMinutos) {
-    const horas = Math.floor(minutos / 60);
-    const mins = minutos % 60;
-    const slot = `${horas.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
-    slots.push(slot);
-  }
-  
-  return slots;
-}
 
 // GET /dades-personals/horarios-tutor/:tutorEmail - Obtener horarios específicos del tutor
 router.get('/horarios-tutor/:tutorEmail', requireAuth(), async (req: Request, res: Response) => {
@@ -1313,24 +1344,12 @@ router.get('/horarios-tutor/:tutorEmail', requireAuth(), async (req: Request, re
       return res.status(403).json({ error: 'No tens permisos per veure aquests horaris' });
     }
 
-    // Crear la tabla si no existe
-    await query(`
-      CREATE TABLE IF NOT EXISTS horarios_tutor (
-        id SERIAL PRIMARY KEY,
-        tutor_email VARCHAR(255) NOT NULL,
-        dia VARCHAR(20) NOT NULL,
-        hora_inicio TIME NOT NULL,
-        hora_fin TIME NOT NULL,
-        activo BOOLEAN DEFAULT true,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-
+    // La tabla horarios_tutor ya existe en el schema
     const result = await query(`
-      SELECT dia, hora_inicio, hora_fin, activo
+      SELECT dia_semana, hora_inicio, hora_fin, activo
       FROM horarios_tutor 
       WHERE tutor_email = $1 
-      ORDER BY dia, hora_inicio
+      ORDER BY dia_semana, hora_inicio
     `, [tutorEmail]);
 
     res.json({

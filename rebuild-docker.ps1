@@ -1,36 +1,44 @@
-#!/usr/bin/env pwsh
+# Script para limpiar y reconstruir Docker
+# Ejecutar como administrador en PowerShell
 
-Write-Host "🔄 Reconstruyendo Docker para Entrevistes App..."
+Write-Host "=== LIMPIEZA Y RECONSTRUCCIÓN DE DOCKER ===" -ForegroundColor Green
 
-# Detener y limpiar contenedores existentes
-Write-Host "1. Deteniendo contenedores..."
-docker-compose down --remove-orphans 2>&1
+# Parar todos los contenedores
+Write-Host "Parando contenedores..." -ForegroundColor Yellow
+docker-compose down --remove-orphans
+
+# Limpiar contenedores, redes y volúmenes huérfanos
+Write-Host "Limpiando contenedores huérfanos..." -ForegroundColor Yellow
+docker container prune -f
+
+Write-Host "Limpiando redes huérfanos..." -ForegroundColor Yellow
+docker network prune -f
+
+Write-Host "Limpiando volúmenes huérfanos..." -ForegroundColor Yellow
+docker volume prune -f
 
 # Limpiar imágenes no utilizadas
-Write-Host "2. Limpiando sistema Docker..."
-docker system prune -f 2>&1
+Write-Host "Limpiando imágenes no utilizadas..." -ForegroundColor Yellow
+docker image prune -f
 
-# Reconstruir desde cero
-Write-Host "3. Reconstruyendo imagen del backend..."
-docker-compose build --no-cache service 2>&1
+# Limpiar caché de construcción
+Write-Host "Limpiando caché de construcción..." -ForegroundColor Yellow
+docker builder prune -f
 
-Write-Host "4. Reconstruyendo imagen del frontend..."
-docker-compose build --no-cache client 2>&1
+# Reconstruir sin caché
+Write-Host "Reconstruyendo servicios..." -ForegroundColor Yellow
+docker-compose build --no-cache
 
-Write-Host "5. Iniciando servicios..."
-docker-compose up -d 2>&1
+# Iniciar servicios
+Write-Host "Iniciando servicios..." -ForegroundColor Yellow
+docker-compose up -d
 
-# Verificar estado
-Write-Host "6. Verificando estado de los contenedores..."
-Start-Sleep -Seconds 10
-docker-compose ps 2>&1
+# Mostrar estado
+Write-Host "Estado de los contenedores:" -ForegroundColor Green
+docker-compose ps
 
-Write-Host "7. Verificando logs del backend..."
-docker-compose logs --tail=20 service 2>&1
-
-Write-Host "8. Verificando logs del frontend..."
-docker-compose logs --tail=20 client 2>&1
-
-Write-Host "✅ Reconstrucción completada!"
-Write-Host "🌐 Frontend: http://localhost:5174"
-Write-Host "🔧 Backend: http://localhost:8081/health"
+Write-Host "=== RECONSTRUCCIÓN COMPLETADA ===" -ForegroundColor Green
+Write-Host "Servicios disponibles en:" -ForegroundColor Cyan
+Write-Host "  - Cliente: http://localhost:5174" -ForegroundColor White
+Write-Host "  - Servicio: http://localhost:8081" -ForegroundColor White
+Write-Host "  - Base de datos: localhost:5433" -ForegroundColor White

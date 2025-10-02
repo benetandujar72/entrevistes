@@ -7,6 +7,7 @@
     obtenirEventosCalendario,
     replicarConfiguracionDia,
     obtenirTutores,
+    generarEnlaceCalendarioPublico,
     type ConfiguracionHorariosTutor,
     type ConfiguracionHorario,
     type EventoCalendario,
@@ -319,6 +320,37 @@
         </div>
       {/if}
     </div>
+    
+    <!-- Enlace Público al Calendario -->
+    {#if tutorSeleccionat}
+      <div class="mt-4 p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-200">
+        <div class="flex items-center gap-2 mb-2">
+          <Icon name="link" size={18} />
+          <h3 class="font-semibold text-purple-900">Enllaç Públic al Calendari</h3>
+        </div>
+        <p class="text-sm text-purple-700 mb-3">Comparteix aquest enllaç amb les famílies per permetre que reservin cites automàticament:</p>
+        <div class="flex gap-2">
+          <input 
+            type="text" 
+            readonly 
+            value={generarEnlaceCalendarioPublico(tutorSeleccionat)}
+            class="flex-1 px-3 py-2 bg-white border border-purple-300 rounded-lg text-sm font-mono"
+            onclick={(e) => (e.target as HTMLInputElement).select()}
+          />
+          <Button 
+            variant="filled" 
+            size="sm"
+            leadingIcon="copy"
+            on:click={() => {
+              navigator.clipboard.writeText(generarEnlaceCalendarioPublico(tutorSeleccionat));
+              toastSuccess('Enllaç copiat al portapapers!');
+            }}
+          >
+            Copiar
+          </Button>
+        </div>
+      </div>
+    {/if}
   </div>
 
   <!-- Botones de Acción -->

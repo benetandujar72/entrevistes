@@ -22,6 +22,13 @@ declare global {
 
 export function requireAuth() {
   return async (req: Request, res: Response, next: NextFunction) => {
+    // Verificar si la autenticación está deshabilitada
+    if (process.env.DISABLE_AUTH === '1') {
+      console.log('🔓 Middleware auth - Autenticación deshabilitada');
+      req.user = { email: 'admin@entrevistes.local', role: 'admin' };
+      return next();
+    }
+    
     // Solo autenticación a través de Google OAuth
     try {
       console.log('🔐 Middleware auth - Headers:', req.headers);
