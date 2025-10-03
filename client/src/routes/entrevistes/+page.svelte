@@ -684,11 +684,16 @@
     box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
   }
 
-  .acords-text {
+  .date-snippet {
     margin-top: 8px;
     color: #374151;
     line-height: 1.5;
     font-size: 0.9rem;
+    max-width: 420px;
+  }
+
+  .date-snippet p {
+    margin: 0;
   }
 
   /* Popover */
@@ -737,6 +742,10 @@
     color: #374151;
     line-height: 1.5;
     font-size: 0.9rem;
+  }
+
+  .popover-content p + p {
+    margin-top: 8px;
   }
 
   .popover-content .no-content {
