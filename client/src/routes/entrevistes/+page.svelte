@@ -18,22 +18,19 @@
   let hasMore = false;
   const pageSize = 50;
 
-  // Estado para controlar qué entradas de entrevistas consolidadas están expandidas
-  // Key format: `${entrevistaId}-${index}`
-  let expandedEntries: Set<string> = new Set();
+  // Estado para controlar el popover visible
+  let hoveredEntry: string | null = null;
 
-  function toggleEntry(entrevistaId: string, index: number) {
-    const key = `${entrevistaId}-${index}`;
-    if (expandedEntries.has(key)) {
-      expandedEntries.delete(key);
-    } else {
-      expandedEntries.add(key);
-    }
-    expandedEntries = expandedEntries; // Trigger reactivity
+  function showPopover(entrevistaId: string, index: number) {
+    hoveredEntry = `${entrevistaId}-${index}`;
   }
 
-  function isEntryExpanded(entrevistaId: string, index: number): boolean {
-    return expandedEntries.has(`${entrevistaId}-${index}`);
+  function hidePopover() {
+    hoveredEntry = null;
+  }
+
+  function isPopoverVisible(entrevistaId: string, index: number): boolean {
+    return hoveredEntry === `${entrevistaId}-${index}`;
   }
 
   onMount(async () => {
@@ -80,7 +77,6 @@
 
   async function reload() {
     currentPage = 0;
-    expandedEntries.clear(); // Reset expanded state on reload
     await loadEntrevistas();
   }
 
@@ -243,37 +239,33 @@
           {/if}
 
           {#if 'tipo' in e && e.tipo === 'consolidada' && e.acords}
-            <!-- Para entrevistas consolidadas, usar acordeón -->
-            <div class="accordion-container">
+            <!-- Para entrevistas consolidadas, mostrar con popover -->
+            <div class="consolidated-dates">
               {#each e.acords.split('---').map(entry => entry.trim()).filter(entry => entry) as entry, index}
                 {@const parts = entry.split('\n').filter(part => part.trim())}
                 {@const dataLine = parts.find(part => part.startsWith('Data:'))}
                 {@const acordsLine = parts.find(part => part.startsWith('Acords:'))}
-                {@const isExpanded = isEntryExpanded(e.id, index)}
+                {@const isVisible = isPopoverVisible(e.id, index)}
 
-                <div class="accordion-item">
-                  <button
-                    class="accordion-header"
-                    class:expanded={isExpanded}
-                    on:click={() => toggleEntry(e.id, index)}
-                    title="Clica per veure els acords"
-                  >
-                    <div class="accordion-title">
-                      <Icon name="calendar" size={12} />
-                      <span>{dataLine || `Entrevista ${index + 1}`}</span>
-                    </div>
-                    <div class="accordion-icon">
-                      <Icon name={isExpanded ? 'chevron-up' : 'chevron-down'} size={14} />
-                    </div>
-                  </button>
+                <div class="date-item"
+                     on:mouseenter={() => showPopover(e.id, index)}
+                     on:mouseleave={hidePopover}>
+                  <div class="date-badge">
+                    <Icon name="calendar" size={12} />
+                    <span>{dataLine || `Entrevista ${index + 1}`}</span>
+                  </div>
 
-                  {#if isExpanded}
-                    <div class="accordion-content">
-                      {#if acordsLine}
-                        <span>{acordsLine}</span>
-                      {:else}
-                        <span class="no-content">Sense acords registrats</span>
-                      {/if}
+                  {#if isVisible}
+                    <div class="popover">
+                      <div class="popover-arrow"></div>
+                      <div class="popover-content">
+                        {#if acordsLine}
+                          <strong>Acords:</strong>
+                          <p>{acordsLine.replace('Acords:', '').trim()}</p>
+                        {:else}
+                          <p class="no-content">Sense acords registrats</p>
+                        {/if}
+                      </div>
                     </div>
                   {/if}
                 </div>
@@ -610,91 +602,101 @@
     line-height: 1.5;
   }
 
-  /* === ACCORDION STYLES === */
-  .accordion-container {
+  /* Consolidated dates with popover */
+  .consolidated-dates {
     display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
   }
 
-  .accordion-item {
-    border: 1px solid var(--google-grey-300);
-    border-radius: var(--radius-md);
-    overflow: hidden;
-    transition: all 0.2s ease;
+  .date-item {
+    position: relative;
+    display: inline-block;
   }
 
-  .accordion-item:hover {
-    border-color: var(--primary-300);
-  }
-
-  .accordion-header {
-    width: 100%;
+  .date-badge {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 0.75rem;
-    background: linear-gradient(135deg, #f3e8ff 0%, #faf5ff 100%);
-    border: none;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    font-size: var(--text-sm);
-  }
-
-  .accordion-header:hover {
-    background: linear-gradient(135deg, #e9d5ff 0%, #f3e8ff 100%);
-  }
-
-  .accordion-header.expanded {
-    background: linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%);
+    gap: 6px;
+    padding: 6px 12px;
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
     color: white;
-  }
-
-  .accordion-title {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
     font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
   }
 
-  .accordion-icon {
-    transition: transform 0.3s ease;
-    display: flex;
-    align-items: center;
+  .date-badge:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
   }
 
-  .accordion-header.expanded .accordion-icon {
-    transform: rotate(180deg);
+  /* Popover */
+  .popover {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-8px);
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    padding: 12px 16px;
+    min-width: 250px;
+    max-width: 400px;
+    z-index: 1000;
+    animation: popoverFadeIn 0.2s ease-out;
   }
 
-  .accordion-content {
-    padding: 1rem;
-    background: var(--google-grey-50);
-    border-top: 1px solid var(--google-grey-300);
-    font-size: var(--text-sm);
-    color: var(--fg-secondary);
+  .popover-arrow {
+    position: absolute;
+    bottom: -6px;
+    left: 50%;
+    transform: translateX(-50%) rotate(45deg);
+    width: 12px;
+    height: 12px;
+    background: white;
+    border-right: 1px solid #e5e7eb;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .popover-content {
+    position: relative;
+    z-index: 1;
+  }
+
+  .popover-content strong {
+    display: block;
+    color: #92400e;
+    margin-bottom: 6px;
+    font-size: 0.9rem;
+  }
+
+  .popover-content p {
+    margin: 0;
+    color: #374151;
     line-height: 1.5;
-    animation: slideDown 0.3s ease;
+    font-size: 0.9rem;
   }
 
-  @keyframes slideDown {
+  .popover-content .no-content {
+    color: #9ca3af;
+    font-style: italic;
+  }
+
+  @keyframes popoverFadeIn {
     from {
       opacity: 0;
-      max-height: 0;
-      padding-top: 0;
-      padding-bottom: 0;
+      transform: translateX(-50%) translateY(-4px);
     }
     to {
       opacity: 1;
-      max-height: 500px;
-      padding-top: 1rem;
-      padding-bottom: 1rem;
+      transform: translateX(-50%) translateY(-8px);
     }
-  }
-
-  .no-content {
-    font-style: italic;
-    color: var(--google-grey-500);
   }
 
   /* === CARD ACTIONS === */
