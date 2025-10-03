@@ -69,6 +69,56 @@
     return colors[pestana] || { bg: 'linear-gradient(135deg, #fef3c7, #fde68a)', border: '#f59e0b', badge: 'linear-gradient(135deg, #f59e0b, #d97706)' };
   }
 
+  type ConsolidatedEntry = {
+    dataLine: string;
+    dataLabel: string;
+    paragraphs: string[];
+    snippet: string;
+  };
+
+  function getConsolidatedEntries(acords: string): ConsolidatedEntry[] {
+    if (!acords) return [];
+
+    return acords
+      .split(/---+/g)
+      .map((entry) => entry.replace(/\r/g, '').trim())
+      .filter((entry) => entry.length > 0)
+      .map((entry, entryIndex) => {
+        const lines = entry
+          .split(/\n+/)
+          .map((line) => line.trim())
+          .filter((line) => line.length > 0);
+
+        const dataLine = lines.find((line) => /^Data:/i.test(line)) ?? '';
+        const dataLabel = dataLine.replace(/^Data:\s*/i, '').trim() || `Entrevista ${entryIndex + 1}`;
+
+        const acordsIndex = lines.findIndex((line) => /^Acords:/i.test(line));
+        let paragraphs: string[] = [];
+
+        if (acordsIndex !== -1) {
+          const firstLine = lines[acordsIndex].replace(/^Acords:\s*/i, '').trim();
+          paragraphs = [firstLine, ...lines.slice(acordsIndex + 1)];
+        } else {
+          paragraphs = lines.filter((line) => !/^Data:/i.test(line));
+        }
+
+        const cleanParagraphs = paragraphs
+          .map((line) => line.trim())
+          .filter((line) => line.length > 0);
+
+        const finalParagraphs = cleanParagraphs.length > 0 ? cleanParagraphs : ['Sense acords registrats'];
+        const plainText = finalParagraphs.join(' ');
+        const snippet = plainText.length > 160 ? `${plainText.slice(0, 160).trim()}…` : plainText;
+
+        return {
+          dataLine: dataLine || dataLabel,
+          dataLabel,
+          paragraphs: finalParagraphs,
+          snippet
+        };
+      });
+  }
+
   // Función para debuggear clics en enlaces de email
   function handleEmailClick(event: MouseEvent) {
     console.log('🔍 DEBUG: Clic en enlace de email detectado');
@@ -632,23 +682,18 @@
             <div class="entrevistes-list">
               {#each historialEntrevistes as entrevista}
                 {#if isEntrevistaConsolidada(entrevista.acords)}
-                  <!-- Para entrevistas consolidadas, crear una card por cada fecha -->
-                  {#each entrevista.acords.split('---').map(entry => entry.trim()).filter(entry => entry) as entry, index}
-                    {@const parts = entry.split('\n').filter(part => part.trim())}
-                    {@const dataLine = parts.find(part => part.startsWith('Data:'))}
-                    {@const acordsText = parts.filter(part => !part.startsWith('Data:') && !part.startsWith('Acords:')).join(' ')}
-                    {@const isVisible = isPopoverVisible(entrevista.id, index)}
+                  {#each getConsolidatedEntries(entrevista.acords) as entry, entryIndex}
                     {@const colorScheme = getColorByPestana(entrevista.pestana_origen || 'Default')}
+                    {@const isVisible = isPopoverVisible(entrevista.id, entryIndex)}
 
                     <div class="entrevista-card entrevista-consolidada"
-                         class:curs-passat={!entrevista.es_curs_actual}
                          style="background: {colorScheme.bg}; border-left-color: {colorScheme.border};"
-                         onmouseenter={() => showPopover(entrevista.id, index)}
+                         onmouseenter={() => showPopover(entrevista.id, entryIndex)}
                          onmouseleave={hidePopover}>
                       <div class="entrevista-header">
                         <div class="entrevista-fecha">
                           <Icon name="calendar" size={16} />
-                          <span class="fecha">{dataLine?.replace('Data:', '').trim() || `Entrevista ${index + 1}`}</span>
+                          <span class="fecha">{entry.dataLabel}</span>
                           <span class="badge-curs badge-historic"
                                 class:curs-actual={entrevista.es_curs_actual}
                                 style="background: {colorScheme.badge};">
@@ -661,12 +706,18 @@
                         </div>
                       </div>
 
+                      <div class="entrevista-snippet">
+                        <p>{entry.snippet}</p>
+                      </div>
+
                       {#if isVisible}
-                        <div class="popover-tooltip">
-                          <div class="tooltip-arrow"></div>
+                        <div class="popover-tooltip" style="border: 2px solid {colorScheme.border};">
+                          <div class="tooltip-arrow" style="border-top-color: {colorScheme.border};"></div>
                           <div class="tooltip-content">
-                            <strong>{dataLine}</strong>
-                            <p>{acordsText || 'Sense acords registrats'}</p>
+                            <strong>{entry.dataLine || 'Sense data registrada'}</strong>
+                            {#each entry.paragraphs as paragraph}
+                              <p>{paragraph}</p>
+                            {/each}
                           </div>
                         </div>
                       {/if}
@@ -1105,7 +1156,173 @@
     margin: 10px 0 0 0;
     line-height: 1.6;
   }
-/* Badge curso */  .badge-curs {    display: inline-block;    padding: 4px 12px;    border-radius: 12px;    font-size: 0.75rem;    font-weight: 600;    margin-top: 8px;    background: #94a3b8;    color: white;  }  .badge-curs.curs-actual {    background: linear-gradient(135deg, #10b981, #059669);    color: white;    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);  }  /* Entrevista curso pasado */  .entrevista-card.curs-passat {    background: linear-gradient(135deg, #f1f5f9, #e2e8f0);    border-left-color: #94a3b8;    opacity: 0.85;  }  .entrevista-card.curs-passat .fecha,  .entrevista-card.curs-passat .hora,  .entrevista-card.curs-passat .acords,  .entrevista-card.curs-passat .entrevista-creador .label,  .entrevista-card.curs-passat .entrevista-creador .value {    color: #475569;  }  /* Entrevistas consolidadas (historicas) */  .entrevista-card.entrevista-consolidada {    position: relative;    cursor: pointer;    transition: all 0.3s ease;    min-height: 60px;  }  .entrevista-card.entrevista-consolidada:hover {    transform: translateY(-2px);    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);  }  .badge-historic {    color: white;  }  .entrevista-consolidada .entrevista-fecha {    display: flex;    align-items: center;    gap: 8px;  }  /* Tooltip/Popover */  .popover-tooltip {    position: absolute;    bottom: calc(100% + 10px);    left: 50%;    transform: translateX(-50%);    background: white;    border: 1px solid #e5e7eb;    border-radius: 8px;    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);    padding: 16px 20px;    min-width: 300px;    max-width: 500px;    z-index: 1000;    animation: tooltipFadeIn 0.2s ease-out;  }  .tooltip-arrow {    position: absolute;    top: 100%;    left: 50%;    transform: translateX(-50%) translateY(-1px);    width: 0;    height: 0;    border-left: 10px solid transparent;    border-right: 10px solid transparent;    border-top: 10px solid white;    filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.1));  }  .tooltip-content {    position: relative;    z-index: 1;  }  .tooltip-content strong {    display: block;    color: #92400e;    margin-bottom: 8px;    font-size: 0.95rem;  }  .tooltip-content p {    margin: 0;    color: #374151;    line-height: 1.6;    font-size: 0.9rem;  }  @keyframes tooltipFadeIn {    from {      opacity: 0;      transform: translateX(-50%) translateY(-5px);    }    to {      opacity: 1;      transform: translateX(-50%) translateY(0);    }  }  /* Entrevista actions */  .entrevista-actions {    display: flex;    gap: 10px;    justify-content: flex-end;    margin-top: 15px;    padding-top: 15px;    border-top: 1px solid rgba(0, 0, 0, 0.1);  }  .btn-edit {    padding: 8px 16px;    border: none;    border-radius: 8px;    background: linear-gradient(135deg, #f59e0b, #d97706);    color: white;    font-weight: 600;    cursor: pointer;    transition: all 0.3s ease;    font-size: 0.9rem;  }  .btn-edit:hover {    transform: translateY(-2px);    box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);  }
+
+  /* Badge curso */
+  .badge-curs {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-top: 8px;
+    background: #94a3b8;
+    color: white;
+  }
+
+  .badge-curs.curs-actual {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+  }
+
+  /* Entrevista curso pasado */
+  .entrevista-card.curs-passat {
+    background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+    border-left-color: #94a3b8;
+    opacity: 0.85;
+  }
+
+  .entrevista-card.curs-passat .fecha,
+  .entrevista-card.curs-passat .hora,
+  .entrevista-card.curs-passat .acords,
+  .entrevista-card.curs-passat .entrevista-creador .label,
+  .entrevista-card.curs-passat .entrevista-creador .value {
+    color: #475569;
+  }
+
+  /* Entrevistas consolidadas (històriques) */
+  .entrevista-card.entrevista-consolidada {
+    position: relative;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-height: 80px;
+    border-left-width: 5px;
+  }
+
+  .entrevista-card.entrevista-consolidada:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  }
+
+  .badge-historic {
+    color: white;
+  }
+
+  .entrevista-consolidada .entrevista-fecha {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .entrevista-snippet {
+    margin-top: 14px;
+    color: #1f2937;
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+
+  .entrevista-snippet p {
+    margin: 0;
+  }
+
+  /* Tooltip/Popover */
+  .popover-tooltip {
+    position: absolute;
+    bottom: calc(100% + 12px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.18);
+    padding: 18px 22px;
+    min-width: 320px;
+    max-width: 520px;
+    z-index: 1000;
+    animation: tooltipFadeIn 0.2s ease-out;
+  }
+
+  .tooltip-arrow {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 12px solid transparent;
+    border-right: 12px solid transparent;
+    border-top: 12px solid rgba(15, 23, 42, 0.15);
+  }
+
+  .tooltip-arrow::after {
+    content: '';
+    position: absolute;
+    top: -12px;
+    left: -10px;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-top: 10px solid white;
+  }
+
+  .tooltip-content {
+    position: relative;
+    z-index: 1;
+  }
+
+  .tooltip-content strong {
+    display: block;
+    color: #92400e;
+    margin-bottom: 10px;
+    font-size: 0.95rem;
+  }
+
+  .tooltip-content p {
+    margin: 0;
+    color: #374151;
+    line-height: 1.6;
+    font-size: 0.9rem;
+  }
+
+  .tooltip-content p + p {
+    margin-top: 8px;
+  }
+
+  @keyframes tooltipFadeIn {
+    from {
+      opacity: 0;
+      transform: translateX(-50%) translateY(-5px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+  }
+
+  /* Entrevista actions */
+  .entrevista-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+  }
+
+  .btn-edit {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+  }
+
+  .btn-edit:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
+  }
 
   /* Calendari */
   .cites-list {

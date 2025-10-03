@@ -33,6 +33,56 @@
     return hoveredEntry === `${entrevistaId}-${index}`;
   }
 
+  type ConsolidatedEntry = {
+    dataLine: string;
+    dataLabel: string;
+    paragraphs: string[];
+    snippet: string;
+  };
+
+  function getConsolidatedEntries(acords: string): ConsolidatedEntry[] {
+    if (!acords) return [];
+
+    return acords
+      .split(/---+/g)
+      .map((entry) => entry.replace(/\r/g, '').trim())
+      .filter((entry) => entry.length > 0)
+      .map((entry, entryIndex) => {
+        const lines = entry
+          .split(/\n+/)
+          .map((line) => line.trim())
+          .filter((line) => line.length > 0);
+
+        const dataLine = lines.find((line) => /^Data:/i.test(line)) ?? '';
+        const dataLabel = dataLine.replace(/^Data:\s*/i, '').trim() || `Entrevista ${entryIndex + 1}`;
+
+        const acordsIndex = lines.findIndex((line) => /^Acords:/i.test(line));
+        let paragraphs: string[] = [];
+
+        if (acordsIndex !== -1) {
+          const firstLine = lines[acordsIndex].replace(/^Acords:\s*/i, '').trim();
+          paragraphs = [firstLine, ...lines.slice(acordsIndex + 1)];
+        } else {
+          paragraphs = lines.filter((line) => !/^Data:/i.test(line));
+        }
+
+        const cleanParagraphs = paragraphs
+          .map((line) => line.trim())
+          .filter((line) => line.length > 0);
+
+        const finalParagraphs = cleanParagraphs.length > 0 ? cleanParagraphs : ['Sense acords registrats'];
+        const plainText = finalParagraphs.join(' ');
+        const snippet = plainText.length > 160 ? `${plainText.slice(0, 160).trim()}…` : plainText;
+
+        return {
+          dataLine: dataLine || dataLabel,
+          dataLabel,
+          paragraphs: finalParagraphs,
+          snippet
+        };
+      });
+  }
+
   onMount(async () => {
     const savedCourse = getSelectedCourse();
     // Si hay un curso guardado, usarlo; si no, usar el primer curso por defecto
@@ -239,36 +289,30 @@
           {/if}
 
           {#if 'tipo' in e && e.tipo === 'consolidada' && e.acords}
-            <!-- Para entrevistas consolidadas, mostrar con popover -->
             <div class="consolidated-dates">
-              {#each e.acords.split('---').map(entry => entry.trim()).filter(entry => entry) as entry, index}
-                {@const parts = entry.split('\n').filter(part => part.trim())}
-                {@const dataLine = parts.find(part => part.startsWith('Data:'))}
-                {@const acordsLine = parts.find(part => part.startsWith('Acords:'))}
-                {@const isVisible = isPopoverVisible(e.id, index)}
+              {#each getConsolidatedEntries(e.acords) as entry, entryIndex}
+                {@const isVisible = isPopoverVisible(e.id, entryIndex)}
 
                 <div class="date-item"
-                     onmouseenter={() => showPopover(e.id, index)}
+                     onmouseenter={() => showPopover(e.id, entryIndex)}
                      onmouseleave={hidePopover}>
                   <a href="/alumnes/{e.alumneId}#historial" class="date-badge">
                     <Icon name="calendar" size={12} />
-                    <span>{dataLine?.replace('Data:', '').trim() || `Entrevista ${index + 1}`}</span>
+                    <span>{entry.dataLabel}</span>
                   </a>
+
+                  <div class="date-snippet">
+                    <p>{entry.snippet}</p>
+                  </div>
 
                   {#if isVisible}
                     <div class="popover">
                       <div class="popover-arrow"></div>
                       <div class="popover-content">
-                        {#if dataLine}
-                          <strong>{dataLine}</strong>
-                        {/if}
-                        {#if acordsLine}
-                          <div class="acords-text">
-                            {acordsLine.replace('Acords:', '').trim()}
-                          </div>
-                        {:else}
-                          <p class="no-content">Sense acords registrats</p>
-                        {/if}
+                        <strong>{entry.dataLine || 'Sense data registrada'}</strong>
+                        {#each entry.paragraphs as paragraph}
+                          <p>{paragraph}</p>
+                        {/each}
                       </div>
                     </div>
                   {/if}
