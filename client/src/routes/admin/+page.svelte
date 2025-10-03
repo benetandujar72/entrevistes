@@ -68,9 +68,8 @@
           font-weight:500;
           transition:all 0.2s;
         "
-        onmouseover="this.style.background='#b91c1c'"
-        onmouseout="this.style.background='#dc2626'"
-        on:click={initializeCourse}
+        onmouseenter={(e) => e.currentTarget.style.background='#b91c1c'}
+        onmouseleave={(e) => e.currentTarget.style.background='#dc2626'}
       >
         {initializing ? 'Inicialitzant...' : 'Inicialitzar Curs'}
       </button>
@@ -103,31 +102,31 @@
         color:#111827;
         background:#f9fafb;
         transition:all 0.2s;
-      " onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='#f9fafb'">
+      " onmouseenter={(e) => e.currentTarget.style.background='#f3f4f6'} onmouseleave={(e) => e.currentTarget.style.background='#f9fafb'}>
         👥 Gestionar Usuaris
       </a>
       <a href="/admin/assignacions" style="
-        display:block; 
-        padding:12px 16px; 
-        border:1px solid #e5e7eb; 
-        border-radius:8px; 
-        text-decoration:none; 
+        display:block;
+        padding:12px 16px;
+        border:1px solid #e5e7eb;
+        border-radius:8px;
+        text-decoration:none;
         color:#111827;
         background:#f9fafb;
         transition:all 0.2s;
-      " onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='#f9fafb'">
+      " onmouseenter={(e) => e.currentTarget.style.background='#f3f4f6'} onmouseleave={(e) => e.currentTarget.style.background='#f9fafb'}>
         📋 Gestionar Assignacions
       </a>
       <a href="/admin/tutories" style="
-        display:block; 
-        padding:12px 16px; 
-        border:1px solid #e5e7eb; 
-        border-radius:8px; 
-        text-decoration:none; 
+        display:block;
+        padding:12px 16px;
+        border:1px solid #e5e7eb;
+        border-radius:8px;
+        text-decoration:none;
         color:#111827;
         background:#f9fafb;
         transition:all 0.2s;
-      " onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='#f9fafb'">
+      " onmouseenter={(e) => e.currentTarget.style.background='#f3f4f6'} onmouseleave={(e) => e.currentTarget.style.background='#f9fafb'}>
         🎓 Gestionar Tutorías
       </a>
     </div>

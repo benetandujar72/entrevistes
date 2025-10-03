@@ -12,6 +12,9 @@ export const generalLimiter = rateLimit({
   },
   standardHeaders: true, // Retorna info en headers `RateLimit-*`
   legacyHeaders: false, // Deshabilita headers `X-RateLimit-*`
+  validate: {
+    trustProxy: false,
+  },
   handler: (req, res) => {
     logger.warn('Rate limit exceeded', {
       ip: req.ip,
@@ -34,6 +37,9 @@ export const authLimiter = rateLimit({
     error: 'Demasiados intentos de autenticación, por favor intenta de nuevo más tarde.',
     retryAfter: '15 minutos',
   },
+  validate: {
+    trustProxy: false,
+  },
   handler: (req, res) => {
     logger.warn('Auth rate limit exceeded', {
       ip: req.ip,
@@ -51,9 +57,12 @@ export const createCitaLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hora
   max: 10, // 10 citas por hora
   keyGenerator: (req: Request) => {
-    // Limitar por IP y por email de familia si existe
+    // Limitar por email de familia si existe, sino por default
     const body = req.body as any;
-    return body?.email_familia || req.ip || 'unknown';
+    return body?.email_familia || 'default';
+  },
+  validate: {
+    trustProxy: false,
   },
   message: {
     error: 'Has alcanzado el límite de citas que puedes crear. Intenta de nuevo en 1 hora.',
@@ -76,6 +85,9 @@ export const importLimiter = rateLimit({
   message: {
     error: 'Has alcanzado el límite de importaciones. Intenta de nuevo en 1 hora.',
   },
+  validate: {
+    trustProxy: false,
+  },
   handler: (req, res) => {
     logger.warn('Import rate limit exceeded', {
       ip: req.ip,
@@ -93,6 +105,9 @@ export const webhookLimiter = rateLimit({
   max: 30, // 30 requests por minuto
   message: {
     error: 'Demasiadas notificaciones de webhook.',
+  },
+  validate: {
+    trustProxy: false,
   },
   handler: (req, res) => {
     logger.warn('Webhook rate limit exceeded', {
