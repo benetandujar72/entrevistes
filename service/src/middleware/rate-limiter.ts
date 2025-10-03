@@ -2,10 +2,12 @@ import rateLimit from 'express-rate-limit';
 import { Request } from 'express';
 import { logger } from '../config/logger.js';
 
+// En desarrollo, usar límite muy alto o desactivar
+const isDevelopment = process.env.NODE_ENV !== 'production';
 // Rate limiter general para la API
 export const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 500, // 100 requests por ventana
+  max: isDevelopment ? 10000 : 500, // 100 requests por ventana
   message: {
     error: 'Demasiadas peticiones desde esta IP, por favor intenta de nuevo más tarde.',
     retryAfter: '15 minutos',
