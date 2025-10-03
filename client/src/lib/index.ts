@@ -15,6 +15,8 @@ export type Entrevista = {
   acords: string;
   es_curs_actual?: boolean;
   usuariCreadorId: string;
+  pestana_origen?: string | null;
+  curso_origen?: string | null;
 };
 
 export type Curs = {

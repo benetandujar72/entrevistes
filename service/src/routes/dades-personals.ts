@@ -236,7 +236,9 @@ router.get('/:alumneId/entrevistes', requireAuth(), async (req: Request, res: Re
         e.acords,
         e.usuari_creador_id,
         e.created_at,
-        CASE WHEN e.any_curs = $2 THEN true ELSE false END as es_curs_actual
+        CASE WHEN e.any_curs = $2 THEN true ELSE false END as es_curs_actual,
+        NULL as pestana_origen,
+        NULL as curso_origen
       FROM entrevistes e
       WHERE e.alumne_id = $1
 
@@ -249,7 +251,9 @@ router.get('/:alumneId/entrevistes', requireAuth(), async (req: Request, res: Re
         ec.acords,
         ec.usuari_creador_id,
         ec.created_at,
-        CASE WHEN ec.any_curs = $2 THEN true ELSE false END as es_curs_actual
+        CASE WHEN ec.any_curs = $2 THEN true ELSE false END as es_curs_actual,
+        ec.pestana_origen,
+        ec.curso_origen
       FROM entrevistes_consolidadas ec
       WHERE ec.alumne_id = $1
 
