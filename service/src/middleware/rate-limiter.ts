@@ -5,7 +5,7 @@ import { logger } from '../config/logger.js';
 // Rate limiter general para la API
 export const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 100, // 100 requests por ventana
+  max: 500, // 100 requests por ventana
   message: {
     error: 'Demasiadas peticiones desde esta IP, por favor intenta de nuevo más tarde.',
     retryAfter: '15 minutos',

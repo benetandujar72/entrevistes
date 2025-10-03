@@ -255,7 +255,7 @@
                   <button
                     class="accordion-header"
                     class:expanded={isExpanded}
-                    onclick={() => toggleEntry(e.id, index)}
+                    on:click={() => toggleEntry(e.id, index)}
                     title="Clica per veure els acords"
                   >
                     <div class="accordion-title">
