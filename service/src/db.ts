@@ -8,7 +8,28 @@ if (!connectionString) {
   console.warn('DATABASE_URL no definido. Funcionando sin base de datos en desarrollo.');
 } else {
   try {
-    pool = new Pool({ connectionString });
+    pool = new Pool({
+      connectionString,
+      max: 20, // Máximo de conexiones
+      idleTimeoutMillis: 30000, // Cerrar conexiones inactivas después de 30s
+      connectionTimeoutMillis: 10000, // Timeout de 10s para nuevas conexiones
+      query_timeout: 30000, // Timeout de 30s para queries
+      statement_timeout: 30000, // Timeout de 30s para statements
+    });
+
+    // Manejar errores del pool
+    pool.on('error', (err) => {
+      console.error('Error inesperado en pool de BD:', err);
+    });
+
+    // Test de conexión inicial
+    pool.query('SELECT NOW()', (err) => {
+      if (err) {
+        console.error('❌ Error en test de conexión inicial:', err);
+      } else {
+        console.log('✅ Conexión a BD establecida correctamente');
+      }
+    });
   } catch (error) {
     console.warn('Error conectando a la base de datos:', error);
     pool = null;
@@ -31,7 +52,7 @@ export async function withTransaction<T>(fn: (client: PoolClient) => Promise<T>)
     const mockClient = {} as PoolClient;
     return fn(mockClient);
   }
-  
+
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -60,5 +81,4 @@ export async function getAnyActual(): Promise<string | null> {
   }
   return null;
 }
-
 

@@ -226,7 +226,7 @@ router.get('/:alumneId/entrevistes', requireAuth(), async (req: Request, res: Re
       }
     }
 
-    // Obtener TODAS las entrevistas de TODOS los cursos
+    // Obtener TODAS las entrevistas de TODOS los cursos (limitadas a 100 m00e1s recientes)
     const result = await query(`
       SELECT
         e.id,
@@ -239,6 +239,7 @@ router.get('/:alumneId/entrevistes', requireAuth(), async (req: Request, res: Re
       FROM entrevistes e
       WHERE e.alumne_id = $1
       ORDER BY e.data DESC, e.created_at DESC
+      LIMIT 100
     `, [alumneId, anyCursActual]);
 
     res.json(result.rows);
