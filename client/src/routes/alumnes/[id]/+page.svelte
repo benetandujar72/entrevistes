@@ -38,6 +38,26 @@
   let loadingCita = false;
   let loadingSolicitut = false;
 
+  // Estado para controlar el popover visible
+  let hoveredEntry: string | null = null;
+
+  function showPopover(entrevistaId: string, index: number) {
+    hoveredEntry = `${entrevistaId}-${index}`;
+  }
+
+  function hidePopover() {
+    hoveredEntry = null;
+  }
+
+  function isPopoverVisible(entrevistaId: string, index: number): boolean {
+    return hoveredEntry === `${entrevistaId}-${index}`;
+  }
+
+  // Función para detectar si una entrevista es consolidada (tiene múltiples fechas)
+  function isEntrevistaConsolidada(acords: string): boolean {
+    return acords && acords.includes('---') && acords.includes('Data:');
+  }
+
   // Función para debuggear clics en enlaces de email
   function handleEmailClick(event: MouseEvent) {
     console.log('🔍 DEBUG: Clic en enlace de email detectado');
@@ -615,10 +635,50 @@
                     </div>
                   </div>
                   <div class="entrevista-content">
-                    <div class="acords">
-                      <strong>Acords:</strong>
-                      <p>{entrevista.acords}</p>
-                    </div>
+                    {#if isEntrevistaConsolidada(entrevista.acords)}
+                      <!-- Para entrevistas consolidadas, mostrar con popover -->
+                      <div class="consolidated-dates">
+                        {#each entrevista.acords.split('---').map(entry => entry.trim()).filter(entry => entry) as entry, index}
+                          {@const parts = entry.split('\n').filter(part => part.trim())}
+                          {@const dataLine = parts.find(part => part.startsWith('Data:'))}
+                          {@const acordsLine = parts.find(part => part.startsWith('Acords:'))}
+                          {@const isVisible = isPopoverVisible(entrevista.id, index)}
+
+                          <div class="date-item"
+                               onmouseenter={() => showPopover(entrevista.id, index)}
+                               onmouseleave={hidePopover}>
+                            <div class="date-badge">
+                              <Icon name="calendar" size={12} />
+                              <span>{dataLine?.replace('Data:', '').trim() || `Entrevista ${index + 1}`}</span>
+                            </div>
+
+                            {#if isVisible}
+                              <div class="popover">
+                                <div class="popover-arrow"></div>
+                                <div class="popover-content">
+                                  {#if dataLine}
+                                    <strong>{dataLine}</strong>
+                                  {/if}
+                                  {#if acordsLine}
+                                    <div class="acords-text">
+                                      {acordsLine.replace('Acords:', '').trim()}
+                                    </div>
+                                  {:else}
+                                    <p class="no-content">Sense acords registrats</p>
+                                  {/if}
+                                </div>
+                              </div>
+                            {/if}
+                          </div>
+                        {/each}
+                      </div>
+                    {:else}
+                      <!-- Para entrevistas normales, mostrar acords directamente -->
+                      <div class="acords">
+                        <strong>Acords:</strong>
+                        <p>{entrevista.acords}</p>
+                      </div>
+                    {/if}
                   </div>
                   {#if entrevista.es_curs_actual}
                     <div class="entrevista-actions">
@@ -1353,6 +1413,110 @@
 
   .card-content .email-link:visited {
     color: #7b1fa2;
+  }
+
+  /* Consolidated dates with popover */
+  .consolidated-dates {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .date-item {
+    position: relative;
+    display: inline-block;
+  }
+
+  .date-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    color: white;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+  }
+
+  .date-badge:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
+  }
+
+  .acords-text {
+    margin-top: 8px;
+    color: #374151;
+    line-height: 1.5;
+    font-size: 0.9rem;
+  }
+
+  /* Popover */
+  .popover {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-8px);
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    padding: 12px 16px;
+    min-width: 250px;
+    max-width: 400px;
+    z-index: 1000;
+    animation: popoverFadeIn 0.2s ease-out;
+  }
+
+  .popover-arrow {
+    position: absolute;
+    bottom: -6px;
+    left: 50%;
+    transform: translateX(-50%) rotate(45deg);
+    width: 12px;
+    height: 12px;
+    background: white;
+    border-right: 1px solid #e5e7eb;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .popover-content {
+    position: relative;
+    z-index: 1;
+  }
+
+  .popover-content strong {
+    display: block;
+    color: #92400e;
+    margin-bottom: 6px;
+    font-size: 0.9rem;
+  }
+
+  .popover-content p {
+    margin: 0;
+    color: #374151;
+    line-height: 1.5;
+    font-size: 0.9rem;
+  }
+
+  .popover-content .no-content {
+    color: #9ca3af;
+    font-style: italic;
+  }
+
+  @keyframes popoverFadeIn {
+    from {
+      opacity: 0;
+      transform: translateX(-50%) translateY(-4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(-50%) translateY(-8px);
+    }
   }
 
   /* Responsive */

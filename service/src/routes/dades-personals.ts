@@ -226,7 +226,8 @@ router.get('/:alumneId/entrevistes', requireAuth(), async (req: Request, res: Re
       }
     }
 
-    // Obtener TODAS las entrevistas de TODOS los cursos (limitadas a 100 m00e1s recientes)
+    // Obtener TODAS las entrevistas de TODOS los cursos (limitadas a 100 más recientes)
+    // Combinar entrevistes normals + consolidades
     const result = await query(`
       SELECT
         e.id,
@@ -238,7 +239,21 @@ router.get('/:alumneId/entrevistes', requireAuth(), async (req: Request, res: Re
         CASE WHEN e.any_curs = $2 THEN true ELSE false END as es_curs_actual
       FROM entrevistes e
       WHERE e.alumne_id = $1
-      ORDER BY e.data DESC, e.created_at DESC
+
+      UNION ALL
+
+      SELECT
+        ec.id,
+        ec.any_curs,
+        ec.data_entrevista as data,
+        ec.acords,
+        ec.usuari_creador_id,
+        ec.created_at,
+        CASE WHEN ec.any_curs = $2 THEN true ELSE false END as es_curs_actual
+      FROM entrevistes_consolidadas ec
+      WHERE ec.alumne_id = $1
+
+      ORDER BY data DESC, created_at DESC
       LIMIT 100
     `, [alumneId, anyCursActual]);
 
