@@ -13,6 +13,7 @@ export type Entrevista = {
   anyCurs: string;
   data: string;
   acords: string;
+  es_curs_actual?: boolean;
   usuariCreadorId: string;
 };
 

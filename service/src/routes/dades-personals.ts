@@ -207,35 +207,39 @@ router.get('/:alumneId', requireAuth(), async (req: Request, res: Response) => {
 router.get('/:alumneId/entrevistes', requireAuth(), async (req: Request, res: Response) => {
   try {
     const { alumneId } = req.params;
-    const anyCurs = req.query.anyCurs as string || '2025-2026';
+    const anyCursActual = req.query.anyCurs as string || '2025-2026';
 
-    // Verificar acceso (misma lógica que arriba)
     const user = req.user;
     if (!user) {
       return res.status(401).json({ error: 'No autenticat' });
     }
 
-    let accessQuery = '';
-    let queryParams: any[] = [alumneId, anyCurs];
-
+    // Para tutores, verificar acceso al alumno (en cualquier año)
     if (user.role !== 'admin') {
-      accessQuery = `AND ta.tutor_email = $3`;
-      queryParams.push(user.email);
+      const accessCheck = await query(`
+        SELECT 1 FROM tutories_alumne
+        WHERE alumne_id = $1 AND tutor_email = $2
+      `, [alumneId, user.email]);
+
+      if (accessCheck.rows.length === 0) {
+        return res.status(403).json({ error: 'No tens accés a aquest alumne' });
+      }
     }
 
+    // Obtener TODAS las entrevistas de TODOS los cursos
     const result = await query(`
-      SELECT 
+      SELECT
         e.id,
+        e.any_curs,
         e.data,
         e.acords,
         e.usuari_creador_id,
         e.created_at,
-        ta.tutor_email
+        CASE WHEN e.any_curs = $2 THEN true ELSE false END as es_curs_actual
       FROM entrevistes e
-      LEFT JOIN tutories_alumne ta ON e.alumne_id = ta.alumne_id AND ta.any_curs = $2
-      WHERE e.alumne_id = $1 AND e.any_curs = $2 ${accessQuery}
+      WHERE e.alumne_id = $1
       ORDER BY e.data DESC, e.created_at DESC
-    `, queryParams);
+    `, [alumneId, anyCursActual]);
 
     res.json(result.rows);
   } catch (error: any) {
