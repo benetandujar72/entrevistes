@@ -600,15 +600,18 @@
           {:else}
             <div class="entrevistes-list">
               {#each historialEntrevistes as entrevista}
-                <div class="entrevista-card">
+                <div class="entrevista-card" class:curs-passat={!entrevista.es_curs_actual}>
                   <div class="entrevista-header">
                     <div class="entrevista-fecha">
                       <span class="fecha">{formatearFechaMadridSoloFecha(entrevista.data)}</span>
                       <span class="hora">{formatearFechaMadridSoloHora(entrevista.data)}</span>
+                      <span class="badge-curs" class:curs-actual={entrevista.es_curs_actual}>
+                        {entrevista.anyCurs}
+                      </span>
                     </div>
                     <div class="entrevista-creador">
                       <span class="label">Creada per:</span>
-                      <span class="value">{entrevista.usuari_creador_id}</span>
+                      <span class="value">{entrevista.usuari_creador_id || 'Desconegut'}</span>
                     </div>
                   </div>
                   <div class="entrevista-content">
@@ -617,6 +620,13 @@
                       <p>{entrevista.acords}</p>
                     </div>
                   </div>
+                  {#if entrevista.es_curs_actual}
+                    <div class="entrevista-actions">
+                      <button class="btn-edit" title="Editar entrevista">
+                        Editar
+                      </button>
+                    </div>
+                  {/if}
                 </div>
               {/each}
             </div>
@@ -1020,6 +1030,7 @@
     margin: 10px 0 0 0;
     line-height: 1.6;
   }
+/* Badge curso */  .badge-curs {    display: inline-block;    padding: 4px 12px;    border-radius: 12px;    font-size: 0.75rem;    font-weight: 600;    margin-top: 8px;    background: #94a3b8;    color: white;  }  .badge-curs.curs-actual {    background: linear-gradient(135deg, #10b981, #059669);    color: white;    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);  }  /* Entrevista curso pasado */  .entrevista-card.curs-passat {    background: linear-gradient(135deg, #f1f5f9, #e2e8f0);    border-left-color: #94a3b8;    opacity: 0.85;  }  .entrevista-card.curs-passat .fecha,  .entrevista-card.curs-passat .hora,  .entrevista-card.curs-passat .acords,  .entrevista-card.curs-passat .entrevista-creador .label,  .entrevista-card.curs-passat .entrevista-creador .value {    color: #475569;  }  /* Entrevista actions */  .entrevista-actions {    display: flex;    gap: 10px;    justify-content: flex-end;    margin-top: 15px;    padding-top: 15px;    border-top: 1px solid rgba(0, 0, 0, 0.1);  }  .btn-edit {    padding: 8px 16px;    border: none;    border-radius: 8px;    background: linear-gradient(135deg, #f59e0b, #d97706);    color: white;    font-weight: 600;    cursor: pointer;    transition: all 0.3s ease;    font-size: 0.9rem;  }  .btn-edit:hover {    transform: translateY(-2px);    box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);  }
 
   /* Calendari */
   .cites-list {
