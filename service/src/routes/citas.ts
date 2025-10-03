@@ -240,7 +240,7 @@ router.post('/:alumneId', requireAuth(), async (req: Request, res: Response) => 
   }
 });
 
-// PUT /citas/:citaId/confirmar - Confirmar cita y crear entrevista
+// PUT /citas/:citaId/confirmar - Confirmar cita y crear borrador de entrevista
 router.put('/:citaId/confirmar', requireAuth(), async (req: Request, res: Response) => {
   try {
     const { citaId } = req.params;
@@ -254,7 +254,7 @@ router.put('/:citaId/confirmar', requireAuth(), async (req: Request, res: Respon
     const citaResult = await query(`
       SELECT cc.*, a.nom as alumne_nom, a.email as alumne_email
       FROM cites_calendari cc
-      JOIN alumnes a ON cc.alumne_id = a.alumne_id
+      LEFT JOIN alumnes a ON cc.alumne_id = a.alumne_id
       WHERE cc.id = $1
     `, [citaId]);
 
@@ -269,7 +269,7 @@ router.put('/:citaId/confirmar', requireAuth(), async (req: Request, res: Respon
       return res.status(403).json({ error: 'No tens permisos per confirmar aquesta cita' });
     }
 
-    const entrevistaResult = await withTransaction(async (client) => {
+    const borradorResult = await withTransaction(async (client) => {
       // Actualizar estado de la cita
       await client.query(`
         UPDATE cites_calendari
@@ -277,22 +277,42 @@ router.put('/:citaId/confirmar', requireAuth(), async (req: Request, res: Respon
         WHERE id = $1
       `, [citaId]);
 
-      // Crear entrevista automáticamente en la tabla principal
-      const entrevistaId = `ent_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      // Crear tabla de borradores si no existe
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS borradores_entrevista (
+          id SERIAL PRIMARY KEY,
+          cita_id VARCHAR(255) NOT NULL,
+          alumne_id VARCHAR(255),
+          tutor_email VARCHAR(255) NOT NULL,
+          fecha_entrevista TIMESTAMP NOT NULL,
+          observaciones TEXT,
+          puntos_tratados TEXT,
+          acuerdos TEXT,
+          seguimiento TEXT,
+          estado VARCHAR(50) DEFAULT 'borrador',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+
+      // Crear borrador de entrevista con información de la cita
+      const observacionesIniciales = `Cita amb ${cita.nom_familia}
+Email: ${cita.email_familia}
+Telèfon: ${cita.telefon_familia || 'No proporcionat'}
+${cita.notes ? '\n\nNotes prèvies:\n' + cita.notes : ''}`;
 
       const result = await client.query(`
-        INSERT INTO entrevistes (
-          id, alumne_id, any_curs, data, acords, usuari_creador_id, cita_id
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+        INSERT INTO borradores_entrevista (
+          cita_id, alumne_id, tutor_email, fecha_entrevista,
+          observaciones, estado
+        ) VALUES ($1, $2, $3, $4, $5, 'borrador')
         RETURNING *
       `, [
-        entrevistaId,
+        citaId,
         cita.alumne_id,
-        cita.any_curs,
-        cita.data_cita,
-        `Entrevista programada amb ${cita.nom_familia} (${cita.email_familia}).\nTelèfon: ${cita.telefon_familia}.${cita.notes ? '\nNotes: ' + cita.notes : ''}`,
         user.email,
-        citaId
+        cita.data_cita,
+        observacionesIniciales
       ]);
 
       return result;
@@ -314,8 +334,8 @@ router.put('/:citaId/confirmar', requireAuth(), async (req: Request, res: Respon
 
     res.json({
       cita: { ...cita, estat: 'confirmada' },
-      entrevista: entrevistaResult.rows[0],
-      message: 'Cita confirmada i entrevista creada automàticament'
+      borrador: borradorResult.rows[0],
+      message: 'Cita confirmada i borrador d\'entrevista creat automàticament'
     });
 
   } catch (error: any) {
