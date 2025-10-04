@@ -40,19 +40,21 @@
   let citesLoaded = false;
   let entrevistesLoaded = false;
 
-  // Estado para controlar el popover visible
-  let hoveredEntry: string | null = null;
+  // Estado para controlar las tarjetas expandidas
+  let expandedEntries: Set<string> = new Set();
 
-  function showPopover(entrevistaId: string, index: number) {
-    hoveredEntry = `${entrevistaId}-${index}`;
+  function toggleExpanded(entrevistaId: string, index: number) {
+    const key = `${entrevistaId}-${index}`;
+    if (expandedEntries.has(key)) {
+      expandedEntries.delete(key);
+    } else {
+      expandedEntries.add(key);
+    }
+    expandedEntries = expandedEntries; // Trigger reactivity
   }
 
-  function hidePopover() {
-    hoveredEntry = null;
-  }
-
-  function isPopoverVisible(entrevistaId: string, index: number): boolean {
-    return hoveredEntry === `${entrevistaId}-${index}`;
+  function isExpanded(entrevistaId: string, index: number): boolean {
+    return expandedEntries.has(`${entrevistaId}-${index}`);
   }
 
   // Función para detectar si una entrevista es consolidada (tiene múltiples fechas)
@@ -696,13 +698,14 @@
                   {console.log('CONSOLIDATED:', { id: entrevista.id, pestana: entrevista.pestana_origen, acords: entrevista.acords.substring(0, 100) })}
                   {#each getConsolidatedEntries(entrevista.acords) as entry, entryIndex}
                     {@const colorScheme = getColorByPestana(entrevista.pestana_origen || 'Default')}
-                    {@const isVisible = isPopoverVisible(entrevista.id, entryIndex)}
-                    {console.log('ENTRY:', entryIndex, entry.dataLabel, colorScheme)}
+                    {@const expanded = isExpanded(entrevista.id, entryIndex)}
 
                     <div class="entrevista-card entrevista-consolidada"
+                         class:expanded={expanded}
                          style="background: {colorScheme.bg}; border-left-color: {colorScheme.border};"
-                         onmouseenter={() => showPopover(entrevista.id, entryIndex)}
-                         onmouseleave={hidePopover}>
+                         onclick={() => toggleExpanded(entrevista.id, entryIndex)}
+                         role="button"
+                         tabindex="0">
                       <div class="entrevista-header">
                         <div class="entrevista-fecha">
                           <Icon name="calendar" size={16} />
@@ -719,29 +722,27 @@
                         </div>
                       </div>
 
-                      <div class="entrevista-snippet">
-                        <p>{entry.snippet}</p>
+                      <div class="entrevista-content">
+                        <div class="acords">
+                          <strong>Acords:</strong>
+                          {#if expanded}
+                            <!-- Mostrar contenido completo -->
+                            <div class="acords-full">
+                              {#each entry.paragraphs as paragraph}
+                                <p>{paragraph}</p>
+                              {/each}
+                            </div>
+                          {:else}
+                            <!-- Mostrar solo snippet -->
+                            <p class="acords-snippet">{entry.snippet}</p>
+                          {/if}
+                        </div>
                       </div>
 
-                      {#if isVisible}
-                        <div class="popover-tooltip" style="border: 2px solid {colorScheme.border};">
-                          <div class="tooltip-arrow" style="border-bottom-color: {colorScheme.border};"></div>
-                          <div class="tooltip-content">
-                            <div class="tooltip-header" style="background: {colorScheme.bg}; border-bottom: 2px solid {colorScheme.border};">
-                              <Icon name="calendar" size={14} />
-                              <strong>{entry.dataLabel || 'Sense data registrada'}</strong>
-                            </div>
-                            <div class="tooltip-body">
-                              <div class="tooltip-section">
-                                <span class="tooltip-label">Acords:</span>
-                                {#each entry.paragraphs as paragraph, idx}
-                                  <p class="tooltip-paragraph">{paragraph}</p>
-                                {/each}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      {/if}
+                      <div class="expand-indicator">
+                        <Icon name={expanded ? "chevron-up" : "chevron-down"} size={18} />
+                        <span>{expanded ? 'Veure menys' : 'Veure més'}</span>
+                      </div>
                     </div>
                   {/each}
                 {:else}
@@ -1225,6 +1226,10 @@
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
   }
 
+  .entrevista-card.entrevista-consolidada.expanded {
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.2);
+  }
+
   .badge-historic {
     color: white;
   }
@@ -1245,115 +1250,51 @@
     border-radius: 6px;
   }
 
-  .entrevista-snippet {
-    margin-top: 14px;
-    color: #1f2937;
+  .acords-snippet {
+    margin: 8px 0 0 0;
+    color: #374151;
     font-size: 0.925rem;
     line-height: 1.6;
-    padding: 10px 12px;
-    background: rgba(255, 255, 255, 0.4);
-    border-radius: 8px;
-    border-left: 3px solid rgba(0, 0, 0, 0.1);
-  }
-
-  .entrevista-snippet p {
-    margin: 0;
-    font-weight: 500;
-  }
-
-  /* Tooltip/Popover */
-  .popover-tooltip {
-    position: absolute;
-    bottom: calc(100% + 16px);
-    left: 50%;
-    transform: translateX(-50%);
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 20px 50px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(15, 23, 42, 0.05);
-    padding: 0;
-    min-width: 350px;
-    max-width: 550px;
-    z-index: 1000;
-    animation: tooltipFadeIn 0.25s ease-out;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
     overflow: hidden;
   }
 
-  .tooltip-arrow {
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 0;
-    height: 0;
-    border-left: 14px solid transparent;
-    border-right: 14px solid transparent;
-    border-top: 0;
-    border-bottom: 14px solid white;
-    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+  .acords-full {
+    margin: 8px 0 0 0;
   }
 
-  .tooltip-content {
-    position: relative;
-    z-index: 1;
+  .acords-full p {
+    margin: 0 0 12px 0;
+    color: #374151;
+    font-size: 0.925rem;
+    line-height: 1.7;
+    white-space: pre-wrap;
   }
 
-  .tooltip-header {
+  .acords-full p:last-child {
+    margin-bottom: 0;
+  }
+
+  .expand-indicator {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 14px 18px;
-    font-size: 0.95rem;
-    font-weight: 600;
-  }
-
-  .tooltip-header strong {
-    flex: 1;
-    margin: 0;
-  }
-
-  .tooltip-body {
-    padding: 16px 18px;
-    max-height: 400px;
-    overflow-y: auto;
-  }
-
-  .tooltip-section {
-    margin-bottom: 0;
-  }
-
-  .tooltip-label {
-    display: block;
-    font-weight: 600;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
     color: #6b7280;
     font-size: 0.85rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 10px;
+    font-weight: 600;
+    transition: color 0.2s ease;
   }
 
-  .tooltip-paragraph {
-    margin: 0 0 10px 0;
+  .entrevista-card:hover .expand-indicator {
     color: #374151;
-    line-height: 1.7;
-    font-size: 0.925rem;
-    white-space: pre-wrap;
-    word-wrap: break-word;
   }
 
-  .tooltip-paragraph:last-child {
-    margin-bottom: 0;
-  }
-
-  @keyframes tooltipFadeIn {
-    from {
-      opacity: 0;
-      transform: translateX(-50%) translateY(-5px);
-    }
-    to {
-      opacity: 1;
-      transform: translateX(-50%) translateY(0);
-    }
-  }
 
   /* Entrevista actions */
   .entrevista-actions {
