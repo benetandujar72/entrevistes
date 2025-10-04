@@ -37,6 +37,8 @@
   let showSolicitutForm = false;
   let loadingCita = false;
   let loadingSolicitut = false;
+  let citesLoaded = false;
+  let entrevistesLoaded = false;
 
   // Estado para controlar el popover visible
   let hoveredEntry: string | null = null;
@@ -54,8 +56,10 @@
   }
 
   // Función para detectar si una entrevista es consolidada (tiene múltiples fechas)
-  function isEntrevistaConsolidada(acords: string): boolean {
-    return acords && acords.includes('Data:');
+  function isEntrevistaConsolidada(entrevista: Entrevista): boolean {
+    // Una entrevista es consolidada si tiene pestana_origen (viene de consolidación)
+    // Y además tiene múltiples entradas separadas por ---
+    return !!(entrevista.pestana_origen && entrevista.acords && entrevista.acords.includes('---'));
   }
 
   // Función para obtener color según la pestaña de origen
@@ -189,6 +193,11 @@
     try {
       loadingEntrevistes = true;
       historialEntrevistes = await obtenirHistorialEntrevistes(alumneId);
+      console.log('LOADED HISTORIAL:', historialEntrevistes.length, 'interviews');
+      historialEntrevistes.forEach((e, i) => {
+        console.log(`  [${i}] pestana_origen:`, e.pestana_origen, 'curso_origen:', e.curso_origen, 'acords length:', e.acords?.length);
+      });
+      entrevistesLoaded = true;
     } catch (e: any) {
       toastError(e?.message || 'Error carregant entrevistes');
     } finally {
@@ -200,6 +209,7 @@
     try {
       loadingCites = true;
       citesCalendari = await obtenirCitesCalendari(alumneId);
+      citesLoaded = true;
     } catch (e: any) {
       toastError(e?.message || 'Error carregant cites');
     } finally {
@@ -391,11 +401,11 @@
   }
 
   // Cargar datos cuando cambia la pestaña
-  $: if (activeTab === 'entrevistes' && historialEntrevistes.length === 0) {
+  $: if (activeTab === 'entrevistes' && !entrevistesLoaded) {
     loadHistorialEntrevistes();
   }
-  
-  $: if (activeTab === 'calendari' && citesCalendari.length === 0) {
+
+  $: if (activeTab === 'calendari' && !citesLoaded) {
     loadCitesCalendari();
   }
 </script>
@@ -681,10 +691,13 @@
           {:else}
             <div class="entrevistes-list">
               {#each historialEntrevistes as entrevista}
-                {#if isEntrevistaConsolidada(entrevista.acords)}
+                {#if isEntrevistaConsolidada(entrevista)}
+                  <!-- DEBUG: Consolidated interview detected -->
+                  {console.log('CONSOLIDATED:', { id: entrevista.id, pestana: entrevista.pestana_origen, acords: entrevista.acords.substring(0, 100) })}
                   {#each getConsolidatedEntries(entrevista.acords) as entry, entryIndex}
                     {@const colorScheme = getColorByPestana(entrevista.pestana_origen || 'Default')}
                     {@const isVisible = isPopoverVisible(entrevista.id, entryIndex)}
+                    {console.log('ENTRY:', entryIndex, entry.dataLabel, colorScheme)}
 
                     <div class="entrevista-card entrevista-consolidada"
                          style="background: {colorScheme.bg}; border-left-color: {colorScheme.border};"
@@ -712,12 +725,20 @@
 
                       {#if isVisible}
                         <div class="popover-tooltip" style="border: 2px solid {colorScheme.border};">
-                          <div class="tooltip-arrow" style="border-top-color: {colorScheme.border};"></div>
+                          <div class="tooltip-arrow" style="border-bottom-color: {colorScheme.border};"></div>
                           <div class="tooltip-content">
-                            <strong>{entry.dataLine || 'Sense data registrada'}</strong>
-                            {#each entry.paragraphs as paragraph}
-                              <p>{paragraph}</p>
-                            {/each}
+                            <div class="tooltip-header" style="background: {colorScheme.bg}; border-bottom: 2px solid {colorScheme.border};">
+                              <Icon name="calendar" size={14} />
+                              <strong>{entry.dataLabel || 'Sense data registrada'}</strong>
+                            </div>
+                            <div class="tooltip-body">
+                              <div class="tooltip-section">
+                                <span class="tooltip-label">Acords:</span>
+                                {#each entry.paragraphs as paragraph, idx}
+                                  <p class="tooltip-paragraph">{paragraph}</p>
+                                {/each}
+                              </div>
+                            </div>
                           </div>
                         </div>
                       {/if}
@@ -1211,34 +1232,50 @@
   .entrevista-consolidada .entrevista-fecha {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .entrevista-consolidada .entrevista-fecha .fecha {
+    font-weight: 600;
+    font-size: 1.05rem;
+    color: #1f2937;
+    padding: 4px 10px;
+    background: rgba(255, 255, 255, 0.6);
+    border-radius: 6px;
   }
 
   .entrevista-snippet {
     margin-top: 14px;
     color: #1f2937;
-    font-size: 0.9rem;
-    line-height: 1.5;
+    font-size: 0.925rem;
+    line-height: 1.6;
+    padding: 10px 12px;
+    background: rgba(255, 255, 255, 0.4);
+    border-radius: 8px;
+    border-left: 3px solid rgba(0, 0, 0, 0.1);
   }
 
   .entrevista-snippet p {
     margin: 0;
+    font-weight: 500;
   }
 
   /* Tooltip/Popover */
   .popover-tooltip {
     position: absolute;
-    bottom: calc(100% + 12px);
+    bottom: calc(100% + 16px);
     left: 50%;
     transform: translateX(-50%);
     background: white;
-    border-radius: 10px;
-    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.18);
-    padding: 18px 22px;
-    min-width: 320px;
-    max-width: 520px;
+    border-radius: 12px;
+    box-shadow: 0 20px 50px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(15, 23, 42, 0.05);
+    padding: 0;
+    min-width: 350px;
+    max-width: 550px;
     z-index: 1000;
-    animation: tooltipFadeIn 0.2s ease-out;
+    animation: tooltipFadeIn 0.25s ease-out;
+    overflow: hidden;
   }
 
   .tooltip-arrow {
@@ -1248,19 +1285,11 @@
     transform: translateX(-50%);
     width: 0;
     height: 0;
-    border-left: 12px solid transparent;
-    border-right: 12px solid transparent;
-    border-top: 12px solid rgba(15, 23, 42, 0.15);
-  }
-
-  .tooltip-arrow::after {
-    content: '';
-    position: absolute;
-    top: -12px;
-    left: -10px;
-    border-left: 10px solid transparent;
-    border-right: 10px solid transparent;
-    border-top: 10px solid white;
+    border-left: 14px solid transparent;
+    border-right: 14px solid transparent;
+    border-top: 0;
+    border-bottom: 14px solid white;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
   }
 
   .tooltip-content {
@@ -1268,22 +1297,51 @@
     z-index: 1;
   }
 
-  .tooltip-content strong {
-    display: block;
-    color: #92400e;
-    margin-bottom: 10px;
+  .tooltip-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 18px;
     font-size: 0.95rem;
+    font-weight: 600;
   }
 
-  .tooltip-content p {
+  .tooltip-header strong {
+    flex: 1;
     margin: 0;
-    color: #374151;
-    line-height: 1.6;
-    font-size: 0.9rem;
   }
 
-  .tooltip-content p + p {
-    margin-top: 8px;
+  .tooltip-body {
+    padding: 16px 18px;
+    max-height: 400px;
+    overflow-y: auto;
+  }
+
+  .tooltip-section {
+    margin-bottom: 0;
+  }
+
+  .tooltip-label {
+    display: block;
+    font-weight: 600;
+    color: #6b7280;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 10px;
+  }
+
+  .tooltip-paragraph {
+    margin: 0 0 10px 0;
+    color: #374151;
+    line-height: 1.7;
+    font-size: 0.925rem;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+
+  .tooltip-paragraph:last-child {
+    margin-bottom: 0;
   }
 
   @keyframes tooltipFadeIn {
