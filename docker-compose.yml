@@ -31,6 +31,8 @@ services:
       PORT: 8081
       ALLOWED_DOMAIN: insbitacola.cat
       DATABASE_URL: postgresql://entrevistes:entrevistes@db:5432/entrevistes
+      # Deshabilitar autenticación en desarrollo
+      DISABLE_AUTH: "1"
       # Google OAuth Client ID
       GOOGLE_CLIENT_ID: 582773400896-0io28jocfebl0aec7u5bnr6up367chs6.apps.googleusercontent.com
       # Credenciales Google (opcional para desarrollo)
@@ -38,6 +40,11 @@ services:
       GOOGLE_PRIVATE_KEY: ${GOOGLE_PRIVATE_KEY:-}
       SHEETS_SPREADSHEET_ID: ${SHEETS_SPREADSHEET_ID:-}
       ANY_ACTUAL: ${ANY_ACTUAL:-2025-2026}
+      # Google Calendar - Domain-Wide Delegation
+      GOOGLE_CALENDAR_EMAIL: entrevistes-calendar-service@bitai-469810.iam.gserviceaccount.com
+      GOOGLE_CALENDAR_PRIVATE_KEY: "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCk7Hdat3xwKm2W\nBCrbB3gSYiSWFF1VJEBxAzPW6xrWwljvDo5fja8QD/eqICqZLQR+ZoS//xBZjP56\nlVS9BADqmOmTmak756wfg/Tj5eOBOXM+X/xDtSY9FGzKvogFz+w14VTbirJ9JP/c\nqPy3vOlkqJG251BQZDYY7Dv6DUOb+PaK/56tcBbOdaWrl7GaE83ljoSf6aj3VJv+\nYGVw/xanKHb/z1zzwk7+dAMvT6jCYS+KvAfkSraSibKx0lWigx3wnps0cRiqMKOr\naAVuglV2G4NSVV7W44hV7G/2gRcZwvvn3JyqAX/78BjlUrb8NIVf5sKyWyMUuknd\nir1knbTHAgMBAAECggEANtbqWR/qIOH6zodUOMCjDHnV8JGU91q2kt2dvzkuE3tM\nVzFf5iYWsCCfGdLYV1bAx8cPHUiTBzP66of9RVyvcVKnWI0f2OuQMGqQY7dtjuqr\nh3IjT+BMdsLz6faxBD2/LatfrCDSeQp0icsnPXFzqiTjTw5bhl/MHT1wNBV1Bcea\nSLYKd/DD86oa64OGRQfkWsRdp1qkIoR7l30RaCZ9FF1wUEVT1bFSaFJxxxxy1Zwr\nqfGf4R3/0xn2xZZ56HKGR65hI1aPnxBm6Kl3HbcTrNlXV3lcuPgW6T8iCAdJX3bp\nFCKEqb8ie92txy2l/fhCvTXmwf7/hf4JRULhAfp6AQKBgQDauhnNOSPyKVRWehNf\n19l65MfLoZ3p11DA9rKRr5eoiUW+817Mzt2wxVs7gEiaGeCThDtbcSQyZ6XgdtVY\nBRYPFvjPj2w/yP4iR5jyGH5KPtmjnBLukJnAxSHKc4o1JjCBBMiXZehX+9HKNhmr\nXr/ziL6CwHfKdy6Gqf1hjSDX2QKBgQDBBzbKhgWE0/RnX8XlZNV3z830QCwI1pwf\n3spK3DB8Fg5FO40Vp0ajL0QUclZycLC2RI+YTlXe8FHZYMzhDs6fpYc+F2U8Pmyz\n2Caqvxsle+W5i/Xj14YdopOhStfaWpIA9bzkasXvS60K9lM0dB/62F8WUC0CGH/u\nBGtz1+qtnwKBgDAEGLPvrk9z+Tq+s9Aff3O2E5JFWXhDN0wVHCBVTtLFx9TiclY9\nt3cd7ChEwitqMN3RcoJhdRPHoyeCjtUy0KPhZB+UmavrALcfxpim/dpor7h2A8Xx\nYn9qBz/9W0LNrmo0VaC+02G1O1nLxJjVRQg+ZawoemOtBD61xJUMuUAJAoGBAKxm\n6xL7nNZEENh7e98krlxyZ7qtziaet5bnf7pY650Iffpr89jRLI/3WVEBxiA0ckB4\n/9/Cp4OVFSWYBaVFelqwlxhoAO1Lu/7tIawDQBW8kTOlxBqZlpnFaSH4HM5TcnAV\nC37ftqXB624ND8ebqCx9MIBXX7utciV+IRK4WEx1AoGBAJZc7jEOuHDlx5iWmeGn\nza3IqwKpJcgkKeBINMYtGmhXS4X/v3Io9z7gpFZ0POEy8LnVrs3GVhjv/WNKF7cy\nn8NlCrn7yRQcZ4oVMfIU2h9Kn7LfNAdSXx5QXqhzCoTcmu2gkIQIm4Ai6BKE/Ksa\n3So0ecUh+trkuCrx6rCvUoQk\n-----END PRIVATE KEY-----\n"
+      GOOGLE_CALENDAR_DOMAIN_WIDE: "true"
+      GOOGLE_CALENDAR_TIMEZONE: Europe/Madrid
       # Logging para desarrollo
       LOG_LEVEL: debug
     depends_on:
@@ -47,6 +54,7 @@ services:
       - "127.0.0.1:8081:8081"
     volumes:
       - ./service/src:/app/src:ro
+      - ./service/dist:/app/dist:ro
       - ./service/package.json:/app/package.json:ro
       - ./service/node_modules:/app/node_modules:cached
     healthcheck:
