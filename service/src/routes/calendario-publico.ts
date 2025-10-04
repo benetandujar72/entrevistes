@@ -90,14 +90,18 @@ router.post('/solicitar-cita', async (req: Request, res: Response) => {
     const dataCita = new Date(`${fecha}T${hora}:00`);
     const citaId = `cita_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-    // Verificar conflictos
+    // Verificar conflictos en el calendario del tutor
     const fechaFin = new Date(dataCita);
     fechaFin.setMinutes(fechaFin.getMinutes() + duracion);
-    
-    const hasConflicts = await googleCalendarService.checkConflicts(dataCita, fechaFin);
+
+    const hasConflicts = await googleCalendarService.checkConflicts(
+      dataCita,
+      fechaFin,
+      tutorEmail as string
+    );
     if (hasConflicts) {
-      return res.status(409).json({ 
-        error: 'Aquest horari ja està ocupat. Si us plau, selecciona un altre horari.' 
+      return res.status(409).json({
+        error: 'Aquest horari ja està ocupat. Si us plau, selecciona un altre horari.'
       });
     }
 

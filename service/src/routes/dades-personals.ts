@@ -668,16 +668,20 @@ router.post('/programador/reservar', requireAuth(), async (req: Request, res: Re
     try {
       const fechaFin = new Date(dataCita);
       fechaFin.setMinutes(fechaFin.getMinutes() + (durada_minuts || 30));
-      
-      // Verificar conflictos antes de crear el evento
-      const hasConflicts = await googleCalendarService.checkConflicts(dataCita, fechaFin);
+
+      // Verificar conflictos en el calendario del tutor antes de crear el evento
+      const hasConflicts = await googleCalendarService.checkConflicts(
+        dataCita,
+        fechaFin,
+        tutorEmail
+      );
       if (hasConflicts) {
-        return res.status(409).json({ 
-          error: 'Conflicto de horario detectado. Por favor, selecciona otro horario.' 
+        return res.status(409).json({
+          error: 'Conflicto de horario detectado. Por favor, selecciona otro horario.'
         });
       }
 
-      // Crear evento en Google Calendar
+      // Crear evento en Google Calendar del tutor
       const googleEvent = await googleCalendarService.createEvent({
         title: `Cita con ${nom_familia}`,
         description: `Cita programada con ${nom_familia} (${email_familia}). Teléfono: ${telefon_familia}.${notes ? ' Notas: ' + notes : ''}`,
@@ -687,7 +691,8 @@ router.post('/programador/reservar', requireAuth(), async (req: Request, res: Re
           { email: tutorEmail, name: 'Tutor' },
           { email: email_familia, name: nom_familia }
         ],
-        location: 'Centro Educativo'
+        location: 'Centro Educativo',
+        ownerEmail: tutorEmail // El evento se crea en el calendario del tutor
       });
       
       // Guardar en BD local con referencia a Google Calendar

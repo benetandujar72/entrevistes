@@ -156,8 +156,12 @@ router.post('/:alumneId', requireAuth(), async (req: Request, res: Response) => 
     const fechaFin = new Date(dataCita);
     fechaFin.setMinutes(fechaFin.getMinutes() + validatedData.durada_minuts);
 
-    // Verificar conflictos
-    const hasConflicts = await googleCalendarService.checkConflicts(dataCita, fechaFin);
+    // Verificar conflictos en el calendario del tutor
+    const hasConflicts = await googleCalendarService.checkConflicts(
+      dataCita,
+      fechaFin,
+      validatedData.tutor_email
+    );
     if (hasConflicts) {
       return res.status(409).json({
         error: 'Conflicte d\'horari detectat. Selecciona un altre horari.'
@@ -187,7 +191,7 @@ router.post('/:alumneId', requireAuth(), async (req: Request, res: Response) => 
       ]);
 
       try {
-        // Crear evento en Google Calendar
+        // Crear evento en Google Calendar del tutor
         const googleEvent = await googleCalendarService.createEvent({
           title: `Cita amb ${validatedData.nom_familia}`,
           description: `Cita programada amb ${validatedData.nom_familia} (${validatedData.email_familia}).\nTelèfon: ${validatedData.telefon_familia}${validatedData.notes ? '\nNotes: ' + validatedData.notes : ''}`,
@@ -197,7 +201,8 @@ router.post('/:alumneId', requireAuth(), async (req: Request, res: Response) => 
             { email: validatedData.tutor_email, name: 'Tutor' },
             { email: validatedData.email_familia, name: validatedData.nom_familia }
           ],
-          location: 'Centre Educatiu'
+          location: 'Centre Educatiu',
+          ownerEmail: validatedData.tutor_email // El evento se crea en el calendario del tutor
         });
 
         // Guardar referencia de Google Calendar
@@ -373,8 +378,8 @@ router.delete('/:citaId', requireAuth(), async (req: Request, res: Response) => 
     // Eliminar de Google Calendar si existe
     if (cita.google_event_id) {
       try {
-        await googleCalendarService.deleteEvent(cita.google_event_id);
-        console.log(`✅ Event ${cita.google_event_id} eliminat de Google Calendar`);
+        await googleCalendarService.deleteEvent(cita.google_event_id, cita.tutor_email);
+        console.log(`✅ Event ${cita.google_event_id} eliminat de Google Calendar del tutor ${cita.tutor_email}`);
       } catch (calendarError: any) {
         console.error('⚠️ Error eliminant event de Google Calendar:', calendarError);
       }
@@ -587,8 +592,12 @@ router.post('/reservar', requireAuth(), async (req: Request, res: Response) => {
     const fechaFin = new Date(dataCita);
     fechaFin.setMinutes(fechaFin.getMinutes() + validatedData.durada_minuts);
 
-    // Verificar conflictos antes de la transacción
-    const hasConflicts = await googleCalendarService.checkConflicts(dataCita, fechaFin);
+    // Verificar conflictos en el calendario del tutor antes de la transacción
+    const hasConflicts = await googleCalendarService.checkConflicts(
+      dataCita,
+      fechaFin,
+      validatedData.tutorEmail
+    );
     if (hasConflicts) {
       return res.status(409).json({
         error: 'Conflicte d\'horari detectat. Selecciona un altre horari.'
@@ -617,7 +626,7 @@ router.post('/reservar', requireAuth(), async (req: Request, res: Response) => {
       ]);
 
       try {
-        // Crear evento en Google Calendar
+        // Crear evento en Google Calendar del tutor
         const googleEvent = await googleCalendarService.createEvent({
           title: `Cita amb ${validatedData.nom_familia}`,
           description: `Cita programada amb ${validatedData.nom_familia} (${validatedData.email_familia}).\nTelèfon: ${validatedData.telefon_familia}${validatedData.notes ? '\nNotes: ' + validatedData.notes : ''}`,
@@ -627,7 +636,8 @@ router.post('/reservar', requireAuth(), async (req: Request, res: Response) => {
             { email: validatedData.tutorEmail, name: 'Tutor' },
             { email: validatedData.email_familia, name: validatedData.nom_familia }
           ],
-          location: 'Centre Educatiu'
+          location: 'Centre Educatiu',
+          ownerEmail: validatedData.tutorEmail // El evento se crea en el calendario del tutor
         });
 
         // Actualizar con referencia de Google Calendar
@@ -763,5 +773,311 @@ router.get('/tutor/:tutorEmail/lista', requireAuth(), async (req: Request, res: 
     res.status(500).json({ error: 'Error obtenint cites del tutor' });
   }
 });
+
+// ========= SISTEMA DE RESERVA PÚBLICA =========
+
+// GET /api/citas/booking-token - Obtener o generar token de reserva del tutor
+router.get('/booking-token', requireAuth(), async (req: Request, res: Response) => {
+  try {
+    const user = req.user;
+    if (!user) {
+      return res.status(401).json({ error: 'No autenticat' });
+    }
+
+    // Buscar token existente
+    let tokenResult = await query(`
+      SELECT token, activo FROM tutor_booking_tokens
+      WHERE tutor_email = $1
+    `, [user.email]);
+
+    // Si no existe, crear uno nuevo
+    if (tokenResult.rows.length === 0) {
+      const newToken = generateBookingToken();
+      await query(`
+        INSERT INTO tutor_booking_tokens (tutor_email, token)
+        VALUES ($1, $2)
+        RETURNING token, activo
+      `, [user.email, newToken]);
+
+      tokenResult = await query(`
+        SELECT token, activo FROM tutor_booking_tokens
+        WHERE tutor_email = $1
+      `, [user.email]);
+    }
+
+    const token = tokenResult.rows[0];
+    const bookingUrl = `${process.env.CLIENT_URL || 'http://localhost:5174'}/reservar-cita/${token.token}`;
+
+    res.json({
+      token: token.token,
+      activo: token.activo,
+      bookingUrl
+    });
+
+  } catch (error: any) {
+    console.error('Error obtenint token de reserva:', error);
+    res.status(500).json({ error: 'Error obtenint token de reserva' });
+  }
+});
+
+// POST /api/citas/booking-token/regenerar - Regenerar token de reserva
+router.post('/booking-token/regenerar', requireAuth(), async (req: Request, res: Response) => {
+  try {
+    const user = req.user;
+    if (!user) {
+      return res.status(401).json({ error: 'No autenticat' });
+    }
+
+    const newToken = generateBookingToken();
+
+    await query(`
+      UPDATE tutor_booking_tokens
+      SET token = $1, updated_at = NOW()
+      WHERE tutor_email = $2
+    `, [newToken, user.email]);
+
+    const bookingUrl = `${process.env.CLIENT_URL || 'http://localhost:5174'}/reservar-cita/${newToken}`;
+
+    res.json({
+      token: newToken,
+      bookingUrl,
+      message: 'Token regenerat correctament'
+    });
+
+  } catch (error: any) {
+    console.error('Error regenerant token:', error);
+    res.status(500).json({ error: 'Error regenerant token' });
+  }
+});
+
+// GET /api/citas/public/:token/info - Obtener información del tutor por token (SIN autenticación)
+router.get('/public/:token/info', async (req: Request, res: Response) => {
+  try {
+    const { token } = req.params;
+
+    const result = await query(`
+      SELECT
+        u.nom as tutor_nom,
+        u.email as tutor_email,
+        tbt.activo
+      FROM tutor_booking_tokens tbt
+      JOIN usuaris u ON tbt.tutor_email = u.email
+      WHERE tbt.token = $1 AND tbt.activo = true
+    `, [token]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Token no vàlid o inactiu' });
+    }
+
+    res.json(result.rows[0]);
+
+  } catch (error: any) {
+    console.error('Error obtenint info del tutor:', error);
+    res.status(500).json({ error: 'Error obtenint informació' });
+  }
+});
+
+// GET /api/citas/public/:token/slots-disponibles - Obtener slots disponibles (SIN autenticación)
+router.get('/public/:token/slots-disponibles', async (req: Request, res: Response) => {
+  try {
+    const { token } = req.params;
+    const { fecha_inicio, fecha_fin } = req.query;
+
+    // Validar token y obtener tutor
+    const tutorResult = await query(`
+      SELECT tutor_email FROM tutor_booking_tokens
+      WHERE token = $1 AND activo = true
+    `, [token]);
+
+    if (tutorResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Token no vàlid' });
+    }
+
+    const tutorEmail = tutorResult.rows[0].tutor_email;
+
+    // Obtener horarios del tutor
+    const horariosResult = await query(`
+      SELECT * FROM horarios_tutor
+      WHERE tutor_email = $1
+        AND activo = true
+        AND fecha_inicio <= $3
+        AND fecha_fin >= $2
+      ORDER BY dia_semana, hora_inicio
+    `, [tutorEmail, fecha_inicio, fecha_fin]);
+
+    // Obtener citas ya reservadas
+    const citasResult = await query(`
+      SELECT data_cita, durada_minuts
+      FROM cites_calendari
+      WHERE tutor_email = $1
+        AND data_cita >= $2
+        AND data_cita <= $3
+        AND estat IN ('pendent', 'confirmada')
+    `, [tutorEmail, fecha_inicio, fecha_fin]);
+
+    // Generar slots disponibles
+    const slotsDisponibles = generarSlotsDisponibles(
+      horariosResult.rows,
+      citasResult.rows,
+      fecha_inicio as string,
+      fecha_fin as string
+    );
+
+    res.json(slotsDisponibles);
+
+  } catch (error: any) {
+    console.error('Error obtenint slots disponibles:', error);
+    res.status(500).json({ error: 'Error obtenint slots disponibles' });
+  }
+});
+
+// POST /api/citas/public/:token/reservar - Reservar cita (SIN autenticación)
+router.post('/public/:token/reservar', async (req: Request, res: Response) => {
+  try {
+    const { token } = req.params;
+    const { data_cita, nom_familia, email_familia, telefon_familia, notes, alumne_id } = req.body;
+
+    // Validar token y obtener tutor
+    const tutorResult = await query(`
+      SELECT tutor_email FROM tutor_booking_tokens
+      WHERE token = $1 AND activo = true
+    `, [token]);
+
+    if (tutorResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Token no vàlid' });
+    }
+
+    const tutorEmail = tutorResult.rows[0].tutor_email;
+
+    // Verificar que el slot esté disponible
+    const slotOcupado = await query(`
+      SELECT id FROM cites_calendari
+      WHERE tutor_email = $1
+        AND data_cita = $2
+        AND estat IN ('pendent', 'confirmada')
+    `, [tutorEmail, data_cita]);
+
+    if (slotOcupado.rows.length > 0) {
+      return res.status(409).json({ error: 'Aquest horari ja està reservat' });
+    }
+
+    // Crear la cita
+    const citaId = `cita_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    const result = await query(`
+      INSERT INTO cites_calendari (
+        id, alumne_id, tutor_email, any_curs, data_cita, durada_minuts,
+        nom_familia, email_familia, telefon_familia, notes, estat
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pendent')
+      RETURNING *
+    `, [
+      citaId,
+      alumne_id || null,
+      tutorEmail,
+      '2025-2026',
+      data_cita,
+      30,
+      nom_familia,
+      email_familia,
+      telefon_familia,
+      notes || null
+    ]);
+
+    // TODO: Enviar email de confirmación
+    // TODO: Crear evento en Google Calendar
+
+    res.status(201).json({
+      message: 'Cita reservada correctament',
+      cita: result.rows[0]
+    });
+
+  } catch (error: any) {
+    console.error('Error reservant cita:', error);
+    res.status(500).json({ error: 'Error reservant cita' });
+  }
+});
+
+// ========= FUNCIONES AUXILIARES =========
+
+function generateBookingToken(): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let token = '';
+  for (let i = 0; i < 32; i++) {
+    token += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return token;
+}
+
+function generarSlotsDisponibles(
+  horarios: any[],
+  citasReservadas: any[],
+  fechaInicio: string,
+  fechaFin: string
+): any[] {
+  const slots: any[] = [];
+  const inicio = new Date(fechaInicio);
+  const fin = new Date(fechaFin);
+
+  // Mapeo de días de la semana
+  const diasSemana = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
+
+  // Crear set de citas reservadas para lookup rápido
+  const citasSet = new Set(
+    citasReservadas.map(cita => new Date(cita.data_cita).toISOString())
+  );
+
+  // Iterar por cada día en el rango
+  for (let fecha = new Date(inicio); fecha <= fin; fecha.setDate(fecha.getDate() + 1)) {
+    const diaSemana = diasSemana[fecha.getDay()];
+
+    // Buscar horarios para este día de la semana
+    const horariosDelDia = horarios.filter(h =>
+      h.dia_semana === diaSemana &&
+      h.activo &&
+      new Date(h.fecha_inicio) <= fecha &&
+      new Date(h.fecha_fin) >= fecha
+    );
+
+    // Para cada horario del día, generar slots
+    for (const horario of horariosDelDia) {
+      const [horaInicio, minInicio] = horario.hora_inicio.split(':').map(Number);
+      const [horaFin, minFin] = horario.hora_fin.split(':').map(Number);
+      const duracion = horario.duracion_cita || 30;
+
+      const inicioMinutos = horaInicio * 60 + minInicio;
+      const finMinutos = horaFin * 60 + minFin;
+
+      // Generar slots en intervalos de duración
+      for (let minutos = inicioMinutos; minutos < finMinutos; minutos += duracion) {
+        const horas = Math.floor(minutos / 60);
+        const mins = minutos % 60;
+
+        const slotFecha = new Date(fecha);
+        slotFecha.setHours(horas, mins, 0, 0);
+
+        // Verificar que no esté en el pasado
+        if (slotFecha < new Date()) continue;
+
+        // Verificar que no esté reservado
+        const slotISO = slotFecha.toISOString();
+        if (citasSet.has(slotISO)) continue;
+
+        // Añadir slot disponible
+        slots.push({
+          datetime: slotISO,
+          fecha: slotFecha.toLocaleDateString('ca-ES', {
+            day: '2-digit',
+            month: 'short'
+          }),
+          hora: `${horas.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`,
+          dia_semana: diaSemana,
+          disponible: true
+        });
+      }
+    }
+  }
+
+  return slots.sort((a, b) => new Date(a.datetime).getTime() - new Date(b.datetime).getTime());
+}
 
 export default router;
